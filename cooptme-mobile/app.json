@@ -16,24 +16,41 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Cette application nécessite l'accès à la caméra pour scanner les QR codes"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": ["CAMERA"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "L'application a besoin d'accéder à votre caméra pour scanner les QR codes."
+        }
+      ],
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "L'application a besoin d'accéder à votre caméra pour scanner les QR codes."
+        }
+      ]
     ],
     "fonts": {
       "Quicksand-Regular": "./assets/fonts/Quicksand-Regular.ttf",
       "Quicksand-Bold": "./assets/fonts/Quicksand-Bold.ttf"
-    }
+    },
+    "sdkVersion": "52.0.0"
   }
 }
