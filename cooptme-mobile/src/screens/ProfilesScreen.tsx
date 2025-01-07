@@ -11,12 +11,17 @@ import {
 } from 'react-native';
 import { Menu, MapPin, Building2 } from 'lucide-react-native';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
+import { RootStackParamList, TabParamList } from '../types/navigation';
 import profileService from '../services/profileService';
-import { LinkedInProfile } from '../types';
+import type { LinkedInProfile } from '../types';
 
-type ProfilesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profiles'>;
+type ProfilesScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Profiles'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 export default function ProfilesScreen() {
   const navigation = useNavigation<ProfilesScreenNavigationProp>();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Camera, CameraView } from "expo-camera";
 import {
   AppState,
@@ -10,15 +10,21 @@ import {
   Button,
   View,
 } from "react-native";
-import { useEffect, useRef } from "react";
 import { Overlay } from "./Overlay";
 import LinkedInBrowser from "../../components/LinkedInBrowser";
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../types/navigation';
+import { RootStackParamList, TabParamList } from '../../types/navigation';
 import { LinkedInProfile } from "../../utils/linkedinScraper";
 
+type ScanScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
 type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Scan'>;
+  navigation: ScanScreenNavigationProp;
 };
 
 export default function ScanScreen({ navigation }: Props) {

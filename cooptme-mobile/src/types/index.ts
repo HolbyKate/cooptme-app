@@ -78,3 +78,30 @@ export interface DecodedToken {
     iat: number;
     userId: string;
 }
+export type RootStackParamList = {
+    Home: undefined;
+    Login: undefined;
+    MainApp: undefined;
+    Events: undefined;
+    Job: undefined;
+    Scan: undefined;
+    ProfileDetail: { profileId: string };
+    ChatConversation: { chatId: string; name: string };
+    Settings: undefined;
+    Help: undefined;
+    Logout: undefined;
+};
+
+export type TabParamList = {
+    Dashboard: undefined;
+    Contacts: undefined;
+    Chat: undefined;
+    Profiles: undefined;
+};
+
+export type DrawerParamList = {
+    MainTabs: undefined;
+    Settings: undefined;
+    Help: undefined;
+    Logout: undefined;
+};

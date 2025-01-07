@@ -1,23 +1,34 @@
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NavigatorScreenParams } from '@react-navigation/native';
 
-export type RootStackParamList = {
-    Login: undefined;
-    MainApp: undefined;
+export type TabParamList = {
     Dashboard: undefined;
-    Home: undefined;
-    Profiles: { userId?: string };
-    ProfileDetail: { profileId: string };
-    Events: undefined;
+    Contacts: undefined;
     Chat: undefined;
-    Scan: undefined;
+    Profiles: { userId?: string };
 };
 
-export type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
-export type MainAppScreenProps = NativeStackScreenProps<RootStackParamList, 'MainApp'>;
-export type DashboardScreenProps = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
-export type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
-export type ProfilesScreenProps = NativeStackScreenProps<RootStackParamList, 'Profiles'>;
-export type ProfileDetailScreenProps = NativeStackScreenProps<RootStackParamList, 'ProfileDetail'>;
-export type EventsScreenProps = NativeStackScreenProps<RootStackParamList, 'Events'>;
-export type ChatScreenProps = NativeStackScreenProps<RootStackParamList, 'Chat'>;
-export type ScanScreenProps = NativeStackScreenProps<RootStackParamList, 'Scan'>;
+export type RootStackParamList = {
+    Home: undefined;
+    Login: undefined;
+    MainApp: NavigatorScreenParams<TabParamList>;
+    Events: undefined;
+    Job: undefined;
+    Scan: undefined;
+    Settings: undefined;
+    Help: undefined;
+    ProfileDetail: { profileId: string };
+    ChatConversation: { chatId: string; name: string };
+};
+
+export type DrawerParamList = {
+    MainTabs: undefined;
+    Settings: undefined;
+    Help: undefined;
+    Logout: undefined;
+};
+
+export type EventsScreenNavigationProp = NativeStackNavigationProp<
+    RootStackParamList,
+    'Events'
+>;

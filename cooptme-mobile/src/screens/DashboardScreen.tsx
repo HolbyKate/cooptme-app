@@ -8,20 +8,43 @@ import {
   Dimensions,
   SafeAreaView,
 } from 'react-native';
-import { Menu, Bell } from 'lucide-react-native';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
-import { Video, ResizeMode } from 'expo-av';
+import { Bell, Users, UserCircle, Calendar, MessageSquare, QrCode, Briefcase, Home } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
+import { RootStackParamList, TabParamList } from '../types/navigation';
 
-type DashboardScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
+type DashboardScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Dashboard'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
-const menuItems = [
-  { id: 1, title: 'Contacts', screen: 'Contacts' },
-  { id: 2, title: 'Profiles', screen: 'Profiles' },
-  { id: 3, title: 'Events', screen: 'Events' },
-  { id: 4, title: 'Chat', screen: 'Chat' },
-  { id: 5, title: 'Scan', screen: 'Scan' },
+// Définir un type plus précis pour les écrans de destination
+type NavigationScreens = keyof RootStackParamList | keyof TabParamList;
+
+type CardItem = {
+  id: number;
+  title: string;
+  screen: NavigationScreens;
+  icon: any;
+  params?: object;
+};
+
+const cardItems: CardItem[] = [
+  { id: 1, title: 'Contacts', screen: 'Contacts', icon: Users },
+  { id: 2, title: 'Profils', screen: 'Profiles', icon: UserCircle },
+  { id: 3, title: 'Événements', screen: 'Events', icon: Calendar },
+  { id: 4, title: 'Messages', screen: 'Chat', icon: MessageSquare },
+  { id: 5, title: 'Job', screen: 'Job', icon: Briefcase },
+  { id: 6, title: 'Scanner', screen: 'Scan', icon: QrCode }
+];
+
+const tabItems: CardItem[] = [
+  { id: 1, icon: Home, screen: 'Dashboard', title: 'Accueil' },
+  { id: 2, icon: Users, screen: 'Contacts', title: 'Contacts' },
+  { id: 3, icon: MessageSquare, screen: 'Chat', title: 'Messages' },
+  { id: 4, icon: UserCircle, screen: 'Profiles', title: 'Profils' },
 ];
 
 const screenWidth = Dimensions.get('window').width;
@@ -29,61 +52,49 @@ const screenWidth = Dimensions.get('window').width;
 export default function DashboardScreen() {
   const navigation = useNavigation<DashboardScreenNavigationProp>();
 
+  const handleNavigation = (screen: NavigationScreens, params?: object) => {
+    // @ts-ignore - Nous ignorons l'erreur de typage ici car nous savons que la navigation est valide
+    navigation.navigate(screen, params);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-          style={styles.menuButton}
-        >
-          <Menu color="#4247BD" size={24} />
-        </TouchableOpacity>
-        <NotificationCard />
+        <View style={styles.notificationBar}>
+          <Bell color="#4247BD" size={20} />
+          <Text style={styles.notificationText}>1 nouvelle notification</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Video
-            style={styles.logo}
-            source={require('../../assets/logo_blue_video.mp4')}
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={true}
-            isLooping={true}
-            isMuted={true}
-          />
-        </View>
-
         <View style={styles.menuGrid}>
-          {menuItems.map((item) => (
+          {cardItems.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={styles.menuItem}
-              onPress={() => {
-                navigation.navigate(item.screen as 'Contacts' | 'Profiles' | 'Events' | 'Chat' | 'Scan');
-              }}
+              onPress={() => handleNavigation(item.screen, item.params)}
             >
+              <item.icon color="#4247BD" size={32} />
               <Text style={styles.menuItemText}>{item.title}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
+
+      <View style={styles.tabBar}>
+        {tabItems.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.tabItem}
+            onPress={() => handleNavigation(item.screen, item.params)}
+          >
+            <item.icon color="#4247BD" size={24} />
+          </TouchableOpacity>
+        ))}
+      </View>
     </SafeAreaView>
   );
 }
-
-const NotificationCard = () => (
-  <View style={styles.notificationCard}>
-    <View style={styles.notificationHeader}>
-      <Text style={styles.notificationTitle}>Notifications</Text>
-      <Bell color="#4247BD" size={24} />
-    </View>
-    <ScrollView style={styles.notificationList}>
-      <Text style={styles.notificationItem}>Nouvelle notification 1</Text>
-      <Text style={styles.notificationItem}>Nouvelle notification 2</Text>
-      <Text style={styles.notificationItem}>Nouvelle notification 3</Text>
-    </ScrollView>
-  </View>
-);
 
 const styles = StyleSheet.create({
   container: {
@@ -92,102 +103,66 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
-  menuButton: {
-    padding: 8,
+  notificationBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    padding: 12,
+    borderRadius: 20,
+    width: '90%',
   },
-  logo: {
-    width: 100,
-    height: 40,
+  notificationText: {
+    fontSize: 14,
+    color: '#4247BD',
+    marginLeft: 8,
   },
   content: {
     flex: 1,
-    padding: 20,
-  },
-  notificationCard: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-    height: 200,
-  },
-  notificationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  notificationTitle: {
-    fontFamily: 'Quicksand-Bold',
-    fontSize: 20,
-    color: '#4247BD',
-  },
-  notificationList: {
-    flex: 1,
-  },
-  notificationItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    fontFamily: 'Quicksand-Regular',
-    color: '#333',
   },
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    padding: 16,
   },
   menuItem: {
-    width: (screenWidth - 60) / 2,
-    height: 120,
+    width: (screenWidth - 48) / 2,
+    aspectRatio: 1,
     backgroundColor: '#F5F5F5',
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    elevation: 2,
   },
   menuItemText: {
-    fontFamily: 'Quicksand-Bold',
     fontSize: 16,
     color: '#4247BD',
+    marginTop: 8,
     textAlign: 'center',
   },
-  scanButton: {
-    backgroundColor: '#FF8F66',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
+  tabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    justifyContent: 'space-around',
   },
-  scanButtonText: {
-    fontFamily: 'Quicksand-Bold',
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-  logoContainer: {
+  tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 100,
-    marginBottom: 20,
+    padding: 8,
   },
 });

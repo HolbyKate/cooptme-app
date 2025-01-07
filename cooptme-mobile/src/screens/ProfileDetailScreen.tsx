@@ -3,40 +3,78 @@ import {
   StyleSheet,
   View,
   Text,
-  Image,
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { profileService } from '../services/profileService';
-import { LinkedInProfile } from '../utils/linkedinScraper';
+import { LinkedInProfile } from '../types/linkedinProfile';
 
 type ProfileDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProfileDetail'>;
 
+type ProfileDetailScreenRouteProp = {
+  params: {
+    profileId: string;
+  };
+};
+
 export default function ProfileDetailScreen() {
   const navigation = useNavigation<ProfileDetailScreenNavigationProp>();
-  const route = useRoute();
-  const { profileId } = route.params as { profileId: string };
+  const route = useRoute<any>();
+  const { profileId } = route.params;
   const [profile, setProfile] = useState<LinkedInProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
         const loadedProfile = await profileService.getProfileById(profileId);
         setProfile(loadedProfile);
       } catch (error) {
+        setError('Erreur lors du chargement du profil');
         console.error('Erreur lors du chargement du profil:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
+
     loadProfile();
   }, [profileId]);
 
-  if (!profile) {
-    return <LoadingScreen />;
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4247BD" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <ArrowLeft color="#4247BD" size={24} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error || 'Profil non trouvé'}</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -75,6 +113,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    textAlign: 'center',
+  },
   header: {
     padding: 20,
     paddingTop: 50,
@@ -89,12 +143,6 @@ const styles = StyleSheet.create({
   profileHeader: {
     alignItems: "center",
     padding: 20,
-  },
-  profilePhoto: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 16,
   },
   photoPlaceholder: {
     width: 120,
@@ -122,38 +170,15 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 12,
   },
-  categoryBadge: {
-    backgroundColor: "#4247BD",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+  company: {
+    fontFamily: "Quicksand-Regular",
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 8,
   },
-  categoryText: {
-    color: "#FFFFFF",
-    fontFamily: "Quicksand-Bold",
-    fontSize: 14,
-  },
-  infoSection: {
-    padding: 20,
-  },
-  sectionTitle: {
-    fontFamily: "Quicksand-Bold",
-    fontSize: 18,
-    color: "#333",
-    marginBottom: 16,
-  },
-  infoItem: {
-    marginBottom: 16,
-  },
-  infoLabel: {
+  location: {
     fontFamily: "Quicksand-Regular",
     fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  infoValue: {
-    fontFamily: "Quicksand-Bold",
-    fontSize: 16,
-    color: "#333",
+    color: "#999",
   },
 });

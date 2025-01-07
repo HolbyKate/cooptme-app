@@ -10,9 +10,11 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { AuthContext } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { RootStackParamList } from '../types/navigation';
 import * as WebBrowser from 'expo-web-browser';
 import { CONFIG } from '../middleware/api.middleware';
+import { NavigatorScreenParams } from '@react-navigation/native';
+import { TabParamList } from '../types/navigation';
 
 // Initialiser WebBrowser
 WebBrowser.maybeCompleteAuthSession();
@@ -45,10 +47,11 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleEmailAuth = async () => {
     try {
-      // Simuler une connexion réussie
       const fakeToken = 'fake-token-123';
       await signIn(fakeToken);
-      navigation.replace('Dashboard');
+      navigation.replace('MainApp', {
+        screen: 'Dashboard'
+      });
     } catch (error) {
       console.error('Erreur:', error);
       setErrorMessage('Une erreur est survenue');
@@ -84,7 +87,9 @@ export default function LoginScreen({ navigation }: Props) {
       const result = await authService.handleAppleLogin(credential);
       if (result.token) {
         await signIn(result.token);
-        navigation.replace('Dashboard');
+        navigation.replace('MainApp', {
+          screen: 'Dashboard'
+        });
       }
     } catch (error: any) {
       setErrorMessage(error.message || 'Erreur de connexion Apple');
@@ -98,7 +103,9 @@ export default function LoginScreen({ navigation }: Props) {
         const userInfo = await authService.handleGoogleLogin(result.authentication.accessToken);
         if (userInfo.token) {
           await signIn(userInfo.token);
-          navigation.replace('Dashboard');
+          navigation.replace('MainApp', {
+            screen: 'Dashboard'
+          });
         }
       }
     } catch (error) {
