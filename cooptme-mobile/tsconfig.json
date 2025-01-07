@@ -1,20 +1,23 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "target": "es2017",
+    "module": "commonjs",
+    "lib": [
+      "es2017",
+      "esnext.asynciterable"
+    ],
+    "skipLibCheck": true,
     "strict": true,
-    "jsx": "react-native",
-    "baseUrl": ".",
-    "paths": {
-      "*": ["src/*"],
-      "@screens/*": ["src/screens/*"],
-      "@services/*": ["src/services/*"]
-    }
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "moduleResolution": "node"
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx"
+    "scripts/**/*"
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

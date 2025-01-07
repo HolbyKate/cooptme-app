@@ -1,82 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   Image,
+  FlatList,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
-import { Menu, Users } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Menu, MapPin, Building2 } from 'lucide-react-native';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
+import profileService from '../services/profileService';
+import { LinkedInProfile } from '../types';
 
-type Category = {
-  id: string;
-  title: string;
-  count: number;
-};
-
-const categories: Category[] = [
-  { id: '1', title: 'IT', count: 145 },
-  { id: '2', title: 'Marketing', count: 89 },
-  { id: '3', title: 'RH', count: 67 },
-  { id: '4', title: 'Finance', count: 54 },
-  { id: '5', title: 'Communication', count: 78 },
-  { id: '6', title: 'Students', count: 234 },
-  { id: '7', title: 'Project Manager', count: 45 },
-  { id: '8', title: 'Product Owner', count: 32 },
-  { id: '9', title: 'Customer Care Manager', count: 28 },
-];
+type ProfilesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profiles'>;
 
 export default function ProfilesScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const navigation = useNavigation<ProfilesScreenNavigationProp>();
+  const [profiles, setProfiles] = useState<LinkedInProfile[]>([]);
 
-  const handleMenuPress = () => {
-    console.log('Menu pressed');
+  useEffect(() => {
+    loadProfiles();
+  }, []);
+
+  const loadProfiles = async () => {
+    try {
+      const loadedProfiles = await profileService.getProfiles();
+      setProfiles(loadedProfiles);
+    } catch (error) {
+      console.error('Erreur lors du chargement des profils:', error);
+    }
   };
 
-  const handleCategoryPress = (categoryId: string) => {
-    // Navigation future vers la liste des profils de cette catégorie
-    console.log('Category pressed:', categoryId);
-  };
+  const renderProfileItem = ({ item }: { item: LinkedInProfile }) => (
+    <TouchableOpacity
+      style={styles.profileCard}
+      onPress={() => navigation.navigate('ProfileDetail', { profileId: item.id })}
+    >
+      <View style={styles.profileInfo}>
+        <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.company}>{item.company}</Text>
+        <Text style={styles.location}>{item.location}</Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
+        <TouchableOpacity
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          style={styles.menuButton}
+        >
           <Menu color="#4247BD" size={24} />
         </TouchableOpacity>
-        <Image
-          source={require('../../assets/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Profils</Text>
-        <Text style={styles.subtitle}>Découvrez les profils par catégorie</Text>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <View style={styles.categoriesGrid}>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={styles.categoryCard}
-                onPress={() => handleCategoryPress(category.id)}
-              >
-                <Users color="#4247BD" size={24} />
-                <Text style={styles.categoryTitle}>{category.title}</Text>
-                <Text style={styles.categoryCount}>{category.count} profils</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        <Text style={styles.title}>Mes Profils LinkedIn</Text>
+        <FlatList
+          data={profiles}
+          renderItem={renderProfileItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContainer}
+        />
       </View>
     </SafeAreaView>
   );
@@ -92,70 +83,49 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    paddingTop: 50,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
   },
   menuButton: {
     padding: 8,
-  },
-  logo: {
-    width: 100,
-    height: 40,
   },
   content: {
     flex: 1,
     padding: 20,
   },
   title: {
-    fontFamily: 'Quicksand-Bold',
     fontSize: 24,
+    fontWeight: 'bold',
     color: '#4247BD',
-    marginBottom: 8,
+    marginBottom: 20,
   },
-  subtitle: {
-    fontFamily: 'Quicksand-Regular',
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
-  },
-  scrollContent: {
+  listContainer: {
     paddingBottom: 20,
   },
-  categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 15,
-  },
-  categoryCard: {
-    width: '48%',
-    backgroundColor: '#F5F5F5',
+  profileCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 16,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
-    marginBottom: 5,
   },
-  categoryTitle: {
-    fontFamily: 'Quicksand-Bold',
-    fontSize: 16,
-    color: '#333',
-    marginTop: 12,
+  profileInfo: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 4,
-    textAlign: 'center',
   },
-  categoryCount: {
-    fontFamily: 'Quicksand-Regular',
+  company: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  location: {
     fontSize: 14,
     color: '#666',
   },

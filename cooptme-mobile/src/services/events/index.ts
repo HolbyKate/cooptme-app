@@ -1,93 +1,91 @@
-import { EventDTO } from './types';
+export interface EventDTO {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time?: string;
+  location: string;
+  organizer?: string;
+  type: 'job_fair' | 'conference' | 'meetup' | 'other';
+  source: string;
+  url?: string;
+}
 
-// Plus tard, ces imports seront décommentés
-// import { fetchEventbriteEvents } from './apis/eventbrite';
-// import { fetchMeetupEvents } from './apis/meetup';
-// import { scrapeDigital113 } from './scrapers/digital113';
-// import { scrapeLaMelee } from './scrapers/lamelee';
-
-// Données de test qui simulent ce qui viendra des différentes sources
 const mockEvents: EventDTO[] = [
   {
     id: '1',
-    title: 'Salon Tech Jobs Toulouse',
-    date: '2024-03-15',
-    time: '09:00 - 18:00',
-    location: 'Centre des Congrès Pierre Baudis, Toulouse',
-    type: 'job_fair',
-    description: 'Le plus grand salon de recrutement IT en Occitanie',
-    source: 'ToulouseJobIT',
-    url: 'https://example.com/event1',
-    organizer: 'Digital 113',
+    title: 'Meetup React Native',
+    description: 'Discussion sur les dernières fonctionnalités de React Native',
+    date: '2024-12-18',
+    time: '14:00 - 16:00',
+    location: 'Station F, Paris',
+    organizer: 'React France',
+    type: 'meetup',
+    source: 'Meetup.com',
+    url: 'https://example.com/meetup-react'
   },
   {
     id: '2',
-    title: 'DevFest Toulouse 2024',
-    date: '2024-04-20',
-    time: '09:00 - 19:00',
-    location: 'Centre de Congrès Diagora, Labège',
-    type: 'conference',
-    description: 'Conférence annuelle des développeurs',
-    source: 'GDG Toulouse',
-    url: 'https://example.com/event2',
-    organizer: 'Google Developer Group',
+    title: 'Forum de l\'emploi Tech',
+    description: 'Rencontrez les entreprises qui recrutent',
+    date: '2024-12-20',
+    time: '09:00 - 18:00',
+    location: 'Paris Expo',
+    organizer: 'TechRecruit',
+    type: 'job_fair',
+    source: 'JobTech',
+    url: 'https://example.com/forum-tech'
   },
   {
     id: '3',
-    title: 'Meetup React Native Toulouse',
-    date: '2024-03-28',
-    time: '19:00 - 22:00',
-    location: 'At Home, Toulouse',
-    type: 'meetup',
-    description: 'Soirée développement mobile avec React Native',
-    source: 'Meetup',
-    url: 'https://example.com/event3',
-    organizer: 'Toulouse JS',
+    title: 'Workshop Design System',
+    description: 'Apprenez à créer un design system efficace',
+    date: '2024-12-20',
+    time: '10:00 - 12:00',
+    location: 'La Défense',
+    organizer: 'UX Design France',
+    type: 'conference',
+    source: 'Eventbrite',
+    url: 'https://example.com/workshop-design'
   }
 ];
 
-export class EventService {
-  // Cette méthode sera utilisée pour combiner toutes les sources plus tard
-  private static async fetchFromAllSources(): Promise<EventDTO[]> {
-    try {
-      // Simuler un délai réseau
-      await new Promise(resolve => setTimeout(resolve, 1000));
+export const EventService = {
+  getAllEvents: async (): Promise<EventDTO[]> => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return mockEvents;
+  },
 
-      // Plus tard, ce sera remplacé par :
-      // const [eventbriteEvents, meetupEvents, digital113Events, laMeleeEvents] = await Promise.all([
-      //   fetchEventbriteEvents(),
-      //   fetchMeetupEvents(),
-      //   scrapeDigital113(),
-      //   scrapeLaMelee(),
-      // ]);
-      // return [...eventbriteEvents, ...meetupEvents, ...digital113Events, ...laMeleeEvents];
+  // Ajout de la méthode refreshEvents
+  refreshEvents: async (): Promise<EventDTO[]> => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    // Dans un vrai service, on ferait un nouvel appel à l'API
+    // Pour l'instant, on retourne les mêmes données mockées
+    return mockEvents;
+  },
 
-      return mockEvents;
-    } catch (error) {
-      console.error('Erreur lors de la récupération des événements:', error);
-      return [];
-    }
+  getEventById: async (id: string): Promise<EventDTO | null> => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return mockEvents.find(event => event.id === id) || null;
+  },
+
+  getEventsByDate: async (date: Date): Promise<EventDTO[]> => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return mockEvents.filter(event => {
+      const eventDate = new Date(event.date);
+      return (
+        eventDate.getDate() === date.getDate() &&
+        eventDate.getMonth() === date.getMonth() &&
+        eventDate.getFullYear() === date.getFullYear()
+      );
+    });
+  },
+
+  getEventsByMonth: async (year: number, month: number): Promise<EventDTO[]> => {
+    await new Promise(resolve => setTimeout(resolve, 700));
+    return mockEvents.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate.getMonth() === month && eventDate.getFullYear() === year;
+    });
   }
-
-  static async getAllEvents(): Promise<EventDTO[]> {
-    const events = await this.fetchFromAllSources();
-    // Trier par date
-    return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }
-
-  static async refreshEvents(): Promise<EventDTO[]> {
-    return this.getAllEvents();
-  }
-
-  // Méthode utilitaire pour plus tard
-  static async searchEvents(query: string): Promise<EventDTO[]> {
-    const events = await this.getAllEvents();
-    const searchTerm = query.toLowerCase();
-
-    return events.filter(event =>
-      event.title.toLowerCase().includes(searchTerm) ||
-      event.description.toLowerCase().includes(searchTerm) ||
-      event.location.toLowerCase().includes(searchTerm)
-    );
-  }
-}
+};

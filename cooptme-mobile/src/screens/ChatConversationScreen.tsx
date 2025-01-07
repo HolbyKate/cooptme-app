@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { ArrowLeft, Send } from 'lucide-react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
+
 
 type Message = {
   id: string;
@@ -65,7 +67,7 @@ export default function ChatConversation({ navigation, route }: ChatConversation
 
       setMessages(prev => [...prev, message]);
       setNewMessage('');
-      
+
       // Scroll to bottom
       setTimeout(() => {
         flatListRef.current?.scrollToEnd();

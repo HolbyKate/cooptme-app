@@ -1,211 +1,260 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
+  View, TextInput, TouchableOpacity, Text, StyleSheet,
+  Platform, KeyboardAvoidingView, ScrollView, Image,
+  ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { authService } from '../services/api';
+import * as Google from 'expo-auth-session/providers/google';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { AuthContext } from '../contexts/AuthContext';
+import { authService } from '../services/auth.service';
+import { LoginScreenProps } from '../types/navigation';
+import * as WebBrowser from 'expo-web-browser';
+import { CONFIG } from '../middleware/api.middleware';
 
-type LoginScreenProps = {
-  navigation: NativeStackNavigationProp<any>;
+// Initialiser WebBrowser
+WebBrowser.maybeCompleteAuthSession();
+
+const googleConfig = {
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  expoClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
 };
-
-interface ValidationErrors {
-  email?: string;
-  password?: string;
-  firstName?: string;
-  lastName?: string;
-}
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [isLogin, setIsLogin] = useState(true);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const { signIn } = useContext(AuthContext);
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: googleConfig.androidClientId,
+    iosClientId: googleConfig.iosClientId,
+    webClientId: googleConfig.webClientId,
+    clientId: googleConfig.expoClientId,
+  });
+
+  const handleEmailAuth = async () => {
+    try {
+      // Simuler une connexion réussie
+      const fakeToken = 'fake-token-123';
+      await signIn(fakeToken);
+      navigation.replace('Dashboard');
+    } catch (error) {
+      console.error('Erreur:', error);
+      setErrorMessage('Une erreur est survenue');
+    }
   };
 
-  const validatePassword = (password: string) => {
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
-    return passwordRegex.test(password);
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setErrorMessage('Veuillez entrer votre email');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await authService.forgotPassword(email);
+      setErrorMessage('Un email de réinitialisation a été envoyé');
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Erreur lors de l\'envoi de l\'email');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const validate = () => {
-    const newErrors: ValidationErrors = {};
-    setErrorMessage('');
+  const handleAppleAuth = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
 
-    if (!validateEmail(email)) {
-      newErrors.email = 'Adresse email invalide';
-    }
-
-    if (!validatePassword(password)) {
-      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial';
-    }
-
-    if (!isLogin) {
-      if (!firstName.trim()) {
-        newErrors.firstName = 'Le prénom est requis';
+      const result = await authService.handleAppleLogin(credential);
+      if (result.token) {
+        await signIn(result.token);
+        navigation.replace('Dashboard');
       }
-      if (!lastName.trim()) {
-        newErrors.lastName = 'Le nom est requis';
-      }
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Erreur de connexion Apple');
     }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (validate()) {
-      setIsLoading(true);
-      try {
-        if (isLogin) {
-          await authService.login(email, password);
-        } else {
-          await authService.register({
-            firstName,
-            lastName,
-            email,
-            password,
-          });
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await promptAsync();
+      if (result?.type === 'success' && result.authentication) {
+        const userInfo = await authService.handleGoogleLogin(result.authentication.accessToken);
+        if (userInfo.token) {
+          await signIn(userInfo.token);
+          navigation.replace('Dashboard');
         }
-        navigation.navigate('Home');
-      } catch (error: any) {
-        setErrorMessage(error.message || 'Une erreur est survenue');
-      } finally {
-        setIsLoading(false);
       }
+    } catch (error) {
+      console.error('Erreur de connexion Google:', error);
+      setErrorMessage('Erreur de connexion avec Google');
     }
   };
+
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const response = await fetch(`${CONFIG.API_URL}/test`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Test de connexion réussi:', {
+          status: response.status,
+          data: data
+        });
+      } catch (error: any) {
+        console.error('Erreur détaillée du test de connexion:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        });
+      }
+    };
+    testConnection();
+  }, []);
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
       <LinearGradient
-        colors={['#4247BD', '#4247BD', '#4247BD']}
+        colors={['#4247BD', '#4247BD']}
         style={styles.background}
       />
-      <View style={styles.content}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardView}
-        >
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.formContainer}>
-              <Text style={styles.title}>
-                {isLogin ? 'Connexion' : 'Inscription'}
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          <Image
+            source={require('../../assets/logo_transparent.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+
+          {errorMessage ? (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          ) : null}
+
+          {!isLogin && (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Prénom"
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholderTextColor="#666"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Nom"
+                value={lastName}
+                onChangeText={setLastName}
+                placeholderTextColor="#666"
+              />
+            </>
+          )}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholderTextColor="#666"
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Mot de passe"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholderTextColor="#666"
+          />
+
+          {isLogin && (
+            <TouchableOpacity
+              onPress={handleForgotPassword}
+              style={styles.forgotPassword}
+            >
+              <Text style={styles.forgotPasswordText}>
+                Mot de passe oublié ?
               </Text>
+            </TouchableOpacity>
+          )}
 
-              {errorMessage ? (
-                <Text style={styles.globalError}>{errorMessage}</Text>
-              ) : null}
+          <TouchableOpacity
+            style={styles.mainButton}
+            onPress={handleEmailAuth}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {isLogin ? 'Se connecter' : 'S\'inscrire'}
+              </Text>
+            )}
+          </TouchableOpacity>
 
-              {!isLogin && (
-                <>
-                  <TextInput
-                    style={[styles.input, errors.firstName && styles.inputError]}
-                    placeholder="Prénom"
-                    placeholderTextColor="#666"
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    editable={!isLoading}
-                  />
-                  {errors.firstName && (
-                    <Text style={styles.errorText}>{errors.firstName}</Text>
-                  )}
+          <TouchableOpacity
+            style={styles.googleButton}
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}
+          >
+            <Text style={styles.socialButtonText}>
+              Continuer avec Google
+            </Text>
+          </TouchableOpacity>
 
-                  <TextInput
-                    style={[styles.input, errors.lastName && styles.inputError]}
-                    placeholder="Nom"
-                    placeholderTextColor="#666"
-                    value={lastName}
-                    onChangeText={setLastName}
-                    editable={!isLoading}
-                  />
-                  {errors.lastName && (
-                    <Text style={styles.errorText}>{errors.lastName}</Text>
-                  )}
-                </>
-              )}
+          {Platform.OS === 'ios' && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={5}
+              style={styles.appleButton}
+              onPress={handleAppleAuth}
+            />
+          )}
 
-              <TextInput
-                style={[styles.input, errors.email && styles.inputError]}
-                placeholder="Email"
-                placeholderTextColor="#666"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-                editable={!isLoading}
-              />
-              {errors.email && (
-                <Text style={styles.errorText}>{errors.email}</Text>
-              )}
-
-              <TextInput
-                style={[styles.input, errors.password && styles.inputError]}
-                placeholder="Mot de passe"
-                placeholderTextColor="#666"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                editable={!isLoading}
-              />
-              {errors.password && (
-                <Text style={styles.errorText}>{errors.password}</Text>
-              )}
-
-              <TouchableOpacity
-                style={[styles.button, isLoading && styles.buttonDisabled]}
-                onPress={handleSubmit}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.buttonText}>
-                    {isLogin ? 'Se connecter' : 'S\'inscrire'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.switchButton}
-                onPress={() => {
-                  if (!isLoading) {
-                    setIsLogin(!isLogin);
-                    setErrors({});
-                    setErrorMessage('');
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <Text style={styles.switchText}>
-                  {isLogin ? 'Créer un compte' : 'Déjà un compte ? Se connecter'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </View>
-    </View>
+          <TouchableOpacity
+            style={styles.switchButton}
+            onPress={() => setIsLogin(!isLogin)}
+          >
+            <Text style={styles.switchButtonText}>
+              {isLogin
+                ? 'Pas encore de compte ? S\'inscrire'
+                : 'Déjà un compte ? Se connecter'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -220,35 +269,29 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
   },
-  content: {
-    flex: 1,
-    zIndex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContainer: {
+  scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
+    padding: 20,
   },
-  formContainer: {
+  content: {
+    width: '100%',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 40,
   },
-  title: {
-    fontFamily: 'Quicksand-Bold',
-    fontSize: 24,
-    color: '#FFFFFF',
+  logo: {
+    width: 150,
+    height: 150,
     marginBottom: 30,
-    textAlign: 'center',
   },
   input: {
+    width: '100%',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
-    fontFamily: 'Quicksand-Regular',
     fontSize: 16,
+    color: '#333',
   },
   inputError: {
     borderColor: '#FF6B6B',
@@ -256,43 +299,72 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF6B6B',
-    fontFamily: 'Quicksand-Regular',
-    fontSize: 12,
-    marginBottom: 10,
-    marginTop: -10,
+    fontSize: 14,
+    marginBottom: 15,
+    textAlign: 'center',
   },
-  button: {
+  mainButton: {
+    width: '100%',
     backgroundColor: '#FF8F66',
     borderRadius: 25,
     padding: 15,
     alignItems: 'center',
     marginTop: 20,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  buttonDisabled: {
-    opacity: 0.7,
+  googleButton: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 25,
+    padding: 15,
+    alignItems: 'center',
+    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    elevation: 2,
+  },
+  appleButton: {
+    width: '100%',
+    height: 50,
+    marginBottom: 15,
   },
   buttonText: {
     color: '#FFFFFF',
-    fontFamily: 'Quicksand-Bold',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  socialButtonText: {
+    color: '#333333',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 20,
+  },
+  forgotPasswordText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   switchButton: {
     marginTop: 20,
-    alignItems: 'center',
   },
-  switchText: {
+  switchButtonText: {
     color: '#FFFFFF',
-    fontFamily: 'Quicksand-Regular',
     fontSize: 14,
+    textDecorationLine: 'underline',
   },
-  globalError: {
-    color: '#FF6B6B',
-    fontFamily: 'Quicksand-Regular',
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 20,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    padding: 10,
-    borderRadius: 5,
-  },
+  buttonDisabled: {
+    opacity: 0.7,
+  }
 });

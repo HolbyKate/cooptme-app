@@ -1,7 +1,29 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API_URL = 'http://192.168.31.149:3000/api'; // Remplacez XX par votre IP locale
+const API_URL = 'http://192.168.31.149:3000/api';
+
+export interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  token?: string;
+  user?: User;
+  error?: string;
+}
+
+export interface SocialLoginData {
+  type: 'google' | 'apple';
+  token: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+}
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -10,29 +32,12 @@ export const api = axios.create({
   },
 });
 
-export const authService = {
-  async login(email: string, password: string) {
-    try {
-      // Pour le développement, simulons une réponse
-      console.log('Tentative de connexion:', email);
-      return { success: true };
-    } catch (error: any) {
-      throw new Error(error.message || 'Erreur de connexion');
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      await AsyncStorage.multiRemove(['userToken', 'userData']);
     }
-  },
-
-  async register(data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-  }) {
-    try {
-      // Pour le développement, simulons une réponse
-      console.log('Tentative d\'inscription:', data);
-      return { success: true };
-    } catch (error: any) {
-      throw new Error(error.message || 'Erreur d\'inscription');
-    }
-  },
-};
+    return Promise.reject(error);
+  }
+);
