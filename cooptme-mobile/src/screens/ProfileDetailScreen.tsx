@@ -36,8 +36,7 @@ export default function ProfileDetailScreen() {
       try {
         setIsLoading(true);
         setError(null);
-        const loadedProfile = await profileService.getProfileById(profileId);
-        setProfile(loadedProfile);
+        const loadedProfile = await profileService.getLinkedInProfileById(profileId);
       } catch (error) {
         setError('Erreur lors du chargement du profil');
         console.error('Erreur lors du chargement du profil:', error);

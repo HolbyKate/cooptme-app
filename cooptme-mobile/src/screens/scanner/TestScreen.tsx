@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ScrollView, StyleSheet } from 'react-native';
-import profileService from "../../services/profileService";
-import { LinkedInProfile } from "../../utils/linkedinScraper";
+import { profileService } from "../../services/profileService";
+import { LinkedInProfile } from "../../types/linkedinProfile";
 
 export default function TestScreen() {
   const [profiles, setProfiles] = useState<LinkedInProfile[]>([]);
 
-  // Fonction pour tester l'ajout d'un profil
   const testAddProfile = async () => {
     try {
-      const testProfile = {
+      const testProfile: LinkedInProfile = {
         id: `test_${Date.now()}`,
         firstName: 'Test',
         lastName: 'User',
@@ -17,12 +16,15 @@ export default function TestScreen() {
         company: 'Test Company',
         location: 'Paris, France',
         profileUrl: `https://linkedin.com/in/test-${Date.now()}`,
-        scannedAt: new Date().toISOString()
+        scannedAt: new Date().toISOString(),
+        category: 'IT', // Ajout du champ requis
+        photoId: Math.floor(Math.random() * 100), // Ajout du champ requis
+        gender: Math.random() > 0.5 ? 'male' : 'female' // Ajout du champ requis
       };
 
-      await profileService.syncProfile(testProfile);
+      await profileService.syncLinkedInProfile(testProfile);
       console.log('Profil test ajouté avec succès');
-      
+
       // Recharger les profils
       loadProfiles();
     } catch (error) {
@@ -30,10 +32,9 @@ export default function TestScreen() {
     }
   };
 
-  // Fonction pour charger les profils
   const loadProfiles = async () => {
     try {
-      const loadedProfiles = await profileService.getProfiles();
+      const loadedProfiles = await profileService.getLinkedInProfiles(); // Changé de getProfiles à getLinkedInProfiles
       setProfiles(loadedProfiles);
       console.log('Profils chargés:', loadedProfiles);
     } catch (error) {
@@ -48,7 +49,7 @@ export default function TestScreen() {
   return (
     <View style={styles.container}>
       <Button title="Ajouter un profil test" onPress={testAddProfile} />
-      
+
       <ScrollView style={styles.profileList}>
         <Text style={styles.title}>Profils enregistrés ({profiles.length})</Text>
         {profiles.map((profile) => (
@@ -57,7 +58,10 @@ export default function TestScreen() {
             <Text>{profile.title}</Text>
             <Text>{profile.company}</Text>
             <Text>{profile.location}</Text>
-            <Text style={styles.date}>Scanné le: {new Date(profile.scannedAt).toLocaleDateString()}</Text>
+            <Text>Catégorie: {profile.category}</Text>
+            <Text style={styles.date}>
+              Scanné le: {new Date(profile.scannedAt).toLocaleDateString()}
+            </Text>
           </View>
         ))}
       </ScrollView>
