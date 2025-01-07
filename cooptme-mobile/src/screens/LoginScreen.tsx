@@ -9,7 +9,8 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { AuthContext } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
-import { LoginScreenProps } from '../types/navigation';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import * as WebBrowser from 'expo-web-browser';
 import { CONFIG } from '../middleware/api.middleware';
 
@@ -23,7 +24,9 @@ const googleConfig = {
   expoClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
 };
 
-export default function LoginScreen({ navigation }: LoginScreenProps) {
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+export default function LoginScreen({ navigation }: Props) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
