@@ -12,6 +12,7 @@ import {
 import { Menu, Search } from "lucide-react-native";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { LinearGradient } from 'expo-linear-gradient';
 
 type ChatListItem = {
   id: string;
@@ -42,7 +43,6 @@ const chatList: ChatListItem[] = [
     avatar: null,
     online: false,
   },
-  // Ajoutez plus de conversations ici
 ];
 
 export default function ChatScreen() {
@@ -102,8 +102,9 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-          <Menu color="#4247BD" size={24} />
+          <Menu color="#FFFFFF" size={24} />
         </TouchableOpacity>
+        <Text style={styles.title}>Messages</Text>
         <Image
           source={require("../../assets/logo_blue.png")}
           style={styles.logo}
@@ -112,8 +113,6 @@ export default function ChatScreen() {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Messages</Text>
-
         <View style={styles.searchContainer}>
           <Search color="#666" size={20} style={styles.searchIcon} />
           <TextInput
@@ -135,6 +134,12 @@ export default function ChatScreen() {
           showsVerticalScrollIndicator={false}
         />
       </View>
+      <LinearGradient
+        colors={['transparent', '#FF8F66']}
+        style={styles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
     </SafeAreaView>
   );
 }
@@ -145,13 +150,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
     paddingTop: 50,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
+    paddingBottom: 15,
+    backgroundColor: '#4c51c6',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -160,19 +166,16 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 8,
   },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    flex: 1,
+  },
   logo: {
     width: 100,
     height: 40,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontFamily: "Quicksand-Bold",
-    fontSize: 24,
-    color: "#4247BD",
-    marginBottom: 20,
   },
   searchContainer: {
     flexDirection: "row",
@@ -278,5 +281,18 @@ const styles = StyleSheet.create({
     fontFamily: "Quicksand-Bold",
     fontSize: 12,
     color: "#FFFFFF",
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 200,
+    opacity: 0.2,
   },
 });

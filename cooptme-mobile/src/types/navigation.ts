@@ -13,7 +13,7 @@ export type RootStackParamList = {
     Login: undefined;
     MainApp: NavigatorScreenParams<TabParamList>;
     Events: undefined;
-    Job: undefined;
+    JobList: undefined;
     Scan: undefined;
     Settings: undefined;
     Help: undefined;
@@ -28,6 +28,7 @@ export type DrawerParamList = {
     Logout: undefined;
 };
 
+export type JobListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'JobList'>;
 export type EventsScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
     'Events'

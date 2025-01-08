@@ -38,7 +38,7 @@ const cardItems: CardItem[] = [
   { id: 2, title: 'Profils', screen: 'Profiles', icon: UserCircle },
   { id: 3, title: 'Événements', screen: 'Events', icon: Calendar },
   { id: 4, title: 'Messages', screen: 'Chat', icon: MessageSquare },
-  { id: 5, title: 'Job', screen: 'Job', icon: Briefcase },
+  { id: 5, title: 'Emplois', screen: 'JobList', icon: Briefcase },
   { id: 6, title: 'Scanner', screen: 'Scan', icon: QrCode }
 ];
 

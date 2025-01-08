@@ -20,7 +20,7 @@ type Contact = {
   photo: string | null;
 };
 
-const contacts = [
+const contacts: Contact[] = [
   {
     id: '1',
     firstName: 'Marie',
@@ -29,7 +29,6 @@ const contacts = [
     meetingPlace: 'Holberton School',
     photo: null,
   },
-  // ... autres contacts
 ];
 
 export default function ContactsScreen() {
@@ -42,14 +41,21 @@ export default function ContactsScreen() {
   const renderItem = ({ item }: { item: Contact }) => (
     <TouchableOpacity style={styles.contactCard}>
       <View style={styles.photoContainer}>
-        <View style={styles.photoPlaceholder}>
-          <Text style={styles.photoPlaceholderText}>
-            {item.firstName[0]}{item.lastName[0]}
-          </Text>
-        </View>
+        {item.photo ? (
+          <Image source={{ uri: item.photo }} style={styles.photo} />
+        ) : (
+          <View style={styles.photoPlaceholder}>
+            <Text style={styles.photoPlaceholderText}>
+              {item.firstName[0]}
+              {item.lastName[0]}
+            </Text>
+          </View>
+        )}
       </View>
       <View style={styles.contactInfo}>
-        <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
+        <Text style={styles.name}>
+          {item.firstName} {item.lastName}
+        </Text>
         <Text style={styles.function}>{item.function}</Text>
         <Text style={styles.meetingPlace}>{item.meetingPlace}</Text>
       </View>
@@ -60,25 +66,22 @@ export default function ContactsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-          <Menu color="#4247BD" size={24} />
+          <Menu color="#FFFFFF" size={24} />
         </TouchableOpacity>
+        <Text style={styles.title}>Contacts</Text>
         <Image
           source={require('../../assets/logo_blue.png')}
           style={styles.logo}
           resizeMode="contain"
         />
       </View>
-
-      <View style={styles.content}>
-        <Text style={styles.title}>Contacts</Text>
-        <FlatList
-          data={contacts}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-        />
-      </View>
+      <FlatList
+        data={contacts}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContainer}
+      />
     </SafeAreaView>
   );
 }
@@ -92,9 +95,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
     paddingTop: 50,
-    backgroundColor: '#FFFFFF',
+    paddingBottom: 15,
+    backgroundColor: '#4c51c6',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -104,22 +108,21 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 8,
   },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    flex: 1,
+  },
   logo: {
     width: 100,
     height: 40,
   },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontFamily: 'Quicksand-Bold',
-    fontSize: 24,
-    color: '#4247BD',
-    marginBottom: 20,
-  },
   listContainer: {
+    paddingHorizontal: 20,
     paddingBottom: 20,
+    paddingTop: 20,
   },
   contactCard: {
     flexDirection: 'row',
@@ -136,6 +139,11 @@ const styles = StyleSheet.create({
   photoContainer: {
     marginRight: 15,
   },
+  photo: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
   photoPlaceholder: {
     width: 60,
     height: 60,
@@ -145,8 +153,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   photoPlaceholderText: {
-    fontFamily: 'Quicksand-Bold',
     fontSize: 18,
+    fontWeight: 'bold',
     color: '#4247BD',
   },
   contactInfo: {
@@ -154,19 +162,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   name: {
-    fontFamily: 'Quicksand-Bold',
     fontSize: 16,
+    fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
   },
   function: {
-    fontFamily: 'Quicksand-Regular',
     fontSize: 14,
     color: '#666',
     marginBottom: 2,
   },
   meetingPlace: {
-    fontFamily: 'Quicksand-Regular',
     fontSize: 12,
     color: '#999',
   },

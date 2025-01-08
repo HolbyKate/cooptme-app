@@ -120,8 +120,9 @@ export default function EventsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-          <Menu color="#4247BD" size={24} />
+          <Menu color="#FFFFFF" size={24} />
         </TouchableOpacity>
+        <Text style={styles.title}>Événements</Text>
         <Image
           source={require("../../assets/logo_blue.png")}
           style={styles.logo}
@@ -130,7 +131,6 @@ export default function EventsScreen() {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Événements</Text>
         <FlatList
           data={events}
           renderItem={renderEventCard}
@@ -154,19 +154,19 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  // ... (mêmes styles que votre code original)
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
     paddingTop: 50,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
+    paddingBottom: 15,
+    backgroundColor: '#4c51c6',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -175,19 +175,16 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 8,
   },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    flex: 1,
+  },
   logo: {
     width: 100,
     height: 40,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontFamily: "Quicksand-Bold",
-    fontSize: 24,
-    color: "#4247BD",
-    marginBottom: 20,
   },
   listContainer: {
     paddingBottom: 20,
@@ -263,5 +260,9 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     marginTop: 40,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
 });

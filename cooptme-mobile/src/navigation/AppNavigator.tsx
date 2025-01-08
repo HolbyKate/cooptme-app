@@ -24,7 +24,7 @@ export default function AppNavigator() {
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="MainApp" component={MainAppScreen} />
                 <Stack.Screen name="Events" component={EventsScreen} />
-                <Stack.Screen name="Job" component={JobScreen} />
+                <Stack.Screen name="JobList" component={JobScreen} />
                 <Stack.Screen name="Scan" component={ScanScreen} />
                 <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
                 <Stack.Screen

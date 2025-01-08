@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    StyleSheet,
     View,
     Text,
     TextInput,
@@ -9,70 +8,122 @@ import {
     SafeAreaView,
     KeyboardAvoidingView,
     Platform,
+    RefreshControl,
+    Linking,
+    Alert,
+    StyleSheet,
+    ActivityIndicator
 } from 'react-native';
-import { ArrowLeft, Plus, Briefcase } from 'lucide-react-native';
+import { ArrowLeft, Search, MapPin, Briefcase } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { IndeedService } from '../services/indeedService';
+import type { JobOffer } from '../types/job';
 
-type JobFormData = {
-    title: string;
-    company: string;
-    location: string;
-    contractType: string;
-    salary: string;
-    description: string;
-    requirements: string[];
-    benefits: string[];
-};
-
-export default function JobScreen() {
+export default function JobListScreen() {
     const navigation = useNavigation();
-    const [formData, setFormData] = useState<JobFormData>({
-        title: '',
-        company: '',
-        location: '',
-        contractType: '',
-        salary: '',
-        description: '',
-        requirements: [''],
-        benefits: [''],
-    });
+    const [jobs, setJobs] = useState<JobOffer[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [location, setLocation] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const addRequirement = () => {
-        setFormData({
-            ...formData,
-            requirements: [...formData.requirements, ''],
-        });
+    const loadJobs = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const fetchedJobs = await IndeedService.fetchJobs();
+            setJobs(fetchedJobs);
+        } catch (e) {
+            setError('Impossible de charger les offres. Veuillez réessayer.');
+            Alert.alert('Erreur', 'Impossible de charger les offres. Veuillez réessayer.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const addBenefit = () => {
-        setFormData({
-            ...formData,
-            benefits: [...formData.benefits, ''],
-        });
+    const searchJobs = async () => {
+        if (!searchTerm && !location) {
+            Alert.alert('Attention', 'Veuillez saisir au moins un critère de recherche');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+            const searchResults = await IndeedService.searchJobs(searchTerm, location);
+            setJobs(searchResults);
+        } catch (e) {
+            setError('Erreur lors de la recherche. Veuillez réessayer.');
+            Alert.alert('Erreur', 'Erreur lors de la recherche. Veuillez réessayer.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const updateRequirement = (index: number, value: string) => {
-        const updatedRequirements = [...formData.requirements];
-        updatedRequirements[index] = value;
-        setFormData({
-            ...formData,
-            requirements: updatedRequirements,
-        });
+    useEffect(() => {
+        loadJobs();
+    }, []);
+
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        loadJobs().finally(() => setRefreshing(false));
+    }, []);
+
+    const handleOpenJob = async (url: string) => {
+        try {
+            const supported = await Linking.canOpenURL(url);
+            if (supported) {
+                await Linking.openURL(url);
+            } else {
+                Alert.alert('Erreur', "Impossible d'ouvrir cette offre");
+            }
+        } catch (error) {
+            Alert.alert('Erreur', "Une erreur s'est produite");
+        }
     };
 
-    const updateBenefit = (index: number, value: string) => {
-        const updatedBenefits = [...formData.benefits];
-        updatedBenefits[index] = value;
-        setFormData({
-            ...formData,
-            benefits: updatedBenefits,
-        });
-    };
+    const JobCard = ({ job }: { job: JobOffer }) => (
+        <TouchableOpacity
+            style={styles.card}
+            onPress={() => job.url && handleOpenJob(job.url)}
+        >
+            <View style={styles.cardHeader}>
+                <View style={styles.cardTitleContainer}>
+                    <Text style={styles.cardTitle}>{job.title}</Text>
+                    <Text style={styles.cardCompany}>{job.company}</Text>
+                </View>
+                <View style={styles.contractTypeBadge}>
+                    <Text style={styles.contractTypeText}>{job.contractType}</Text>
+                </View>
+            </View>
 
-    const handleSubmit = () => {
-        // Ici, vous pouvez ajouter la logique pour envoyer les données
-        console.log('Form Data:', formData);
-    };
+            <View style={styles.cardMetadata}>
+                <View style={styles.metadataItem}>
+                    <MapPin size={16} color="#666666" />
+                    <Text style={styles.metadataText}>{job.location}</Text>
+                </View>
+                {job.salary && (
+                    <View style={styles.metadataItem}>
+                        <Briefcase size={16} color="#666666" />
+                        <Text style={styles.metadataText}>{job.salary}</Text>
+                    </View>
+                )}
+            </View>
+
+            <Text style={styles.description} numberOfLines={3}>
+                {job.description}
+            </Text>
+
+            <Text style={styles.postedDate}>{job.postedDate}</Text>
+
+            <View style={styles.cardFooter}>
+                <Text style={styles.seeMoreText}>
+                    Appuyez pour voir les détails →
+                </Text>
+            </View>
+        </TouchableOpacity>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -85,111 +136,85 @@ export default function JobScreen() {
                         onPress={() => navigation.goBack()}
                         style={styles.backButton}
                     >
-                        <ArrowLeft color="#4247BD" size={24} />
+                        <ArrowLeft color="#FFFFFF" size={24} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Créer une offre d'emploi</Text>
-                    <Briefcase color="#4247BD" size={24} />
+                    <Text style={styles.headerTitle}>Offres d'emploi Actual</Text>
+                    <Briefcase color="#FFFFFF" size={24} />
                 </View>
 
-                <ScrollView style={styles.content}>
-                    <View style={styles.formSection}>
-                        <Text style={styles.label}>Titre du poste</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={formData.title}
-                            onChangeText={(value) => setFormData({ ...formData, title: value })}
-                            placeholder="Ex: Développeur Full-Stack"
-                        />
-
-                        <Text style={styles.label}>Entreprise</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={formData.company}
-                            onChangeText={(value) => setFormData({ ...formData, company: value })}
-                            placeholder="Nom de l'entreprise"
-                        />
-
-                        <Text style={styles.label}>Localisation</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={formData.location}
-                            onChangeText={(value) => setFormData({ ...formData, location: value })}
-                            placeholder="Ex: Paris, France"
-                        />
-
-                        <Text style={styles.label}>Type de contrat</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={formData.contractType}
-                            onChangeText={(value) => setFormData({ ...formData, contractType: value })}
-                            placeholder="Ex: CDI, CDD, Freelance"
-                        />
-
-                        <Text style={styles.label}>Rémunération</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={formData.salary}
-                            onChangeText={(value) => setFormData({ ...formData, salary: value })}
-                            placeholder="Ex: 45-55k€ annuel"
-                            keyboardType="numeric"
-                        />
-
-                        <Text style={styles.label}>Description du poste</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea]}
-                            value={formData.description}
-                            onChangeText={(value) => setFormData({ ...formData, description: value })}
-                            placeholder="Décrivez le poste en détail..."
-                            multiline
-                            numberOfLines={6}
-                        />
-
-                        <Text style={styles.label}>Prérequis</Text>
-                        {formData.requirements.map((req, index) => (
-                            <TextInput
-                                key={index}
-                                style={styles.input}
-                                value={req}
-                                onChangeText={(value) => updateRequirement(index, value)}
-                                placeholder={`Prérequis ${index + 1}`}
+                <ScrollView
+                    style={styles.scrollView}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    }
+                >
+                    <View style={styles.searchSection}>
+                        <View style={styles.searchInputContainer}>
+                            <Search
+                                size={20}
+                                color="#9CA3AF"
+                                style={styles.searchIcon}
                             />
-                        ))}
-                        <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={addRequirement}
-                        >
-                            <Plus color="#4247BD" size={20} />
-                            <Text style={styles.addButtonText}>Ajouter un prérequis</Text>
-                        </TouchableOpacity>
-
-                        <Text style={styles.label}>Avantages</Text>
-                        {formData.benefits.map((benefit, index) => (
                             <TextInput
-                                key={index}
                                 style={styles.input}
-                                value={benefit}
-                                onChangeText={(value) => updateBenefit(index, value)}
-                                placeholder={`Avantage ${index + 1}`}
+                                placeholder="Rechercher un poste..."
+                                value={searchTerm}
+                                onChangeText={setSearchTerm}
+                                onSubmitEditing={searchJobs}
+                                returnKeyType="search"
                             />
-                        ))}
+                        </View>
+
+                        <View style={styles.searchInputContainer}>
+                            <MapPin
+                                size={20}
+                                color="#9CA3AF"
+                                style={styles.searchIcon}
+                            />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Lieu"
+                                value={location}
+                                onChangeText={setLocation}
+                                onSubmitEditing={searchJobs}
+                                returnKeyType="search"
+                            />
+                        </View>
+
                         <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={addBenefit}
+                            style={styles.searchButton}
+                            onPress={searchJobs}
                         >
-                            <Plus color="#4247BD" size={20} />
-                            <Text style={styles.addButtonText}>Ajouter un avantage</Text>
+                            <Text style={styles.searchButtonText}>Rechercher</Text>
                         </TouchableOpacity>
                     </View>
-                </ScrollView>
 
-                <View style={styles.footer}>
-                    <TouchableOpacity
-                        style={styles.submitButton}
-                        onPress={handleSubmit}
-                    >
-                        <Text style={styles.submitButtonText}>Publier l'offre</Text>
-                    </TouchableOpacity>
-                </View>
+                    {loading ? (
+                        <View style={styles.centerContent}>
+                            <ActivityIndicator size="large" color="#4c51c6" />
+                        </View>
+                    ) : error ? (
+                        <View style={styles.centerContent}>
+                            <Text style={styles.errorText}>{error}</Text>
+                            <TouchableOpacity
+                                style={styles.retryButton}
+                                onPress={loadJobs}
+                            >
+                                <Text style={styles.retryButtonText}>Réessayer</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : jobs.length === 0 ? (
+                        <View style={styles.centerContent}>
+                            <Text style={styles.noResultsText}>Aucune offre trouvée</Text>
+                        </View>
+                    ) : (
+                        <View style={styles.jobList}>
+                            {jobs.map(job => (
+                                <JobCard key={job.id} job={job} />
+                            ))}
+                        </View>
+                    )}
+                </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -202,11 +227,12 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 50,
+        paddingBottom: 15,
+        backgroundColor: '#4c51c6',
     },
     backButton: {
         padding: 8,
@@ -214,57 +240,151 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#4247BD',
+        color: '#FFFFFF',
     },
-    content: {
+    scrollView: {
         flex: 1,
+        backgroundColor: '#F3F4F6',
     },
-    formSection: {
+    searchSection: {
         padding: 16,
+        gap: 12,
     },
-    label: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: '#333',
-        marginTop: 16,
-        marginBottom: 8,
+    searchInputContainer: {
+        position: 'relative',
+        marginBottom: 12,
+    },
+    searchIcon: {
+        position: 'absolute',
+        left: 12,
+        top: 12,
     },
     input: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 8,
+        paddingVertical: 12,
+        paddingLeft: 40,
+        paddingRight: 12,
+        fontSize: 16,
+        color: '#1F2937',
+    },
+    searchButton: {
+        backgroundColor: '#4c51c6',
         borderRadius: 8,
         padding: 12,
-        fontSize: 16,
-        marginBottom: 8,
-    },
-    textArea: {
-        height: 120,
-        textAlignVertical: 'top',
-    },
-    addButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        marginTop: 8,
-    },
-    addButtonText: {
-        color: '#4247BD',
-        fontSize: 16,
-        marginLeft: 8,
-    },
-    footer: {
-        padding: 16,
-        borderTopWidth: 1,
-        borderTopColor: '#E0E0E0',
-    },
-    submitButton: {
-        backgroundColor: '#4247BD',
-        borderRadius: 8,
-        padding: 16,
         alignItems: 'center',
     },
-    submitButtonText: {
+    searchButtonText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '600',
+    },
+    centerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorText: {
+        color: '#DC2626',
+        textAlign: 'center',
+        marginBottom: 12,
+    },
+    noResultsText: {
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    retryButton: {
+        backgroundColor: '#4c51c6',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 6,
+        marginTop: 12,
+    },
+    retryButtonText: {
+        color: '#FFFFFF',
+        fontWeight: '500',
+    },
+    jobList: {
+        padding: 16,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    cardTitleContainer: {
+        flex: 1,
+        marginRight: 12,
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1F2937',
+        marginBottom: 4,
+    },
+    cardCompany: {
+        fontSize: 14,
+        color: '#6B7280',
+    },
+    contractTypeBadge: {
+        backgroundColor: '#EEF2FF',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    contractTypeText: {
+        color: '#4c51c6',
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    cardMetadata: {
+        flexDirection: 'row',
+        marginTop: 12,
+        gap: 16,
+    },
+    metadataItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    metadataText: {
+        color: '#666666',
+        fontSize: 14,
+    },
+    description: {
+        marginTop: 12,
+        color: '#374151',
+        lineHeight: 20,
+    },
+    postedDate: {
+        marginTop: 12,
+        color: '#6B7280',
+        fontSize: 14,
+    },
+    cardFooter: {
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+    },
+    seeMoreText: {
+        color: '#4c51c6',
+        fontSize: 14,
+        textAlign: 'center',
     },
 });
