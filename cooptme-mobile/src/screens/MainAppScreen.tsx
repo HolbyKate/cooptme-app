@@ -8,6 +8,8 @@ import DashboardScreen from './DashboardScreen';
 import ContactsScreen from './ContactsScreen';
 import ChatScreen from './ChatScreen';
 import ProfilesScreen from './ProfilesScreen';
+import ScanScreen from './scanner/ScanScreen';
+
 
 // Import des écrans du drawer
 import SettingsScreen from '../screens/drawer/SettingsScreen';

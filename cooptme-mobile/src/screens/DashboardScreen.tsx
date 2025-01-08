@@ -7,6 +7,7 @@ import {
   ScrollView,
   Dimensions,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { Bell, Users, UserCircle, Calendar, MessageSquare, QrCode, Briefcase, Home } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +15,7 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, TabParamList } from '../types/navigation';
+import { NavigatorScreenParams } from '@react-navigation/native';
 
 type DashboardScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Dashboard'>,
@@ -53,8 +55,15 @@ export default function DashboardScreen() {
   const navigation = useNavigation<DashboardScreenNavigationProp>();
 
   const handleNavigation = (screen: NavigationScreens, params?: object) => {
-    // @ts-ignore - Nous ignorons l'erreur de typage ici car nous savons que la navigation est valide
-    navigation.navigate(screen, params);
+    if (screen === 'Contacts' || screen === 'Chat' || screen === 'Profiles' || screen === 'Dashboard') {
+      navigation.navigate('MainApp', {
+        screen: screen,
+        params: params
+      } as NavigatorScreenParams<TabParamList>);
+    } else {
+      // Ajout du type casting approprié et des paramètres
+      navigation.navigate(screen as keyof RootStackParamList, params as never);
+    }
   };
 
   return (
@@ -80,18 +89,6 @@ export default function DashboardScreen() {
           ))}
         </View>
       </ScrollView>
-
-      <View style={styles.tabBar}>
-        {tabItems.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.tabItem}
-            onPress={() => handleNavigation(item.screen, item.params)}
-          >
-            <item.icon color="#4247BD" size={24} />
-          </TouchableOpacity>
-        ))}
-      </View>
     </SafeAreaView>
   );
 }
@@ -101,14 +98,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   notificationBar: {
     flexDirection: 'row',
@@ -123,28 +121,26 @@ const styles = StyleSheet.create({
     color: '#4247BD',
     marginLeft: 8,
   },
-  content: {
-    flex: 1,
-  },
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingBottom: 20,
   },
   menuItem: {
-    width: (screenWidth - 48) / 2,
+    width: '48%',
     aspectRatio: 1,
-    backgroundColor: '#F5F5F5',
+    marginBottom: 15,
+    padding: 15,
     borderRadius: 12,
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    marginBottom: 16,
-    elevation: 2,
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
+    elevation: 3,
   },
   menuItemText: {
     fontSize: 16,
