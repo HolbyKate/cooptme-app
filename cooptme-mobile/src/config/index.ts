@@ -1,5 +1,7 @@
 export const CONFIG = {
-    API_URL: 'http://192.168.31.149:3000/api',
+    API_URL: __DEV__
+        ? 'http://10.0.2.2:3000' // Pour Android Emulator
+        : 'https://votre-api-prod.com',
     API_TIMEOUT: 10000,
     AUTH_ENDPOINTS: {
         LOGIN: '/auth/login',

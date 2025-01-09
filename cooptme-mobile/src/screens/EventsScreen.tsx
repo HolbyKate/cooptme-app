@@ -14,10 +14,11 @@ import { Menu, Calendar, MapPin, Clock } from "lucide-react-native";
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { EventService, EventDTO } from "../services/events";
 import { Linking } from "react-native";
-import type { EventsScreenNavigationProp } from '../types/navigation';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types/navigation';
 
 export default function EventsScreen() {
-  const navigation = useNavigation<EventsScreenNavigationProp>();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [events, setEvents] = useState<EventDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

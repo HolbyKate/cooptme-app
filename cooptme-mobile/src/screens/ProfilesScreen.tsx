@@ -14,12 +14,11 @@ import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, TabParamList } from '../types/navigation';
+import { RootStackParamList, MainTabParamList } from '../types/navigation';
 import { profileService } from '../services/profileService';
 import { LinkedInProfile, Contact, CategoryTitle, categories } from '../types/index';
-
 type ProfilesScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<TabParamList, 'Profiles'>,
+  BottomTabNavigationProp<MainTabParamList, 'Profiles'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 

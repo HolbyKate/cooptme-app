@@ -1,35 +1,32 @@
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { NavigatorScreenParams } from '@react-navigation/native';
 
-export type TabParamList = {
+// Types pour le Tab Navigator principal
+export type MainTabParamList = {
     Dashboard: undefined;
-    Contacts: undefined;
+    MyAccount: undefined;
     Chat: undefined;
-    Profiles: { userId?: string };
-};
-
-export type RootStackParamList = {
-    Home: undefined;
-    Login: undefined;
-    MainApp: NavigatorScreenParams<TabParamList>;
-    Events: undefined;
-    JobList: undefined;
     Scan: undefined;
-    Settings: undefined;
-    Help: undefined;
-    ProfileDetail: { profileId: string };
-    ChatConversation: { chatId: string; name: string };
+    Profiles: { userId?: string };
+    Contacts: undefined;
 };
 
+// Types pour le Drawer
 export type DrawerParamList = {
-    MainTabs: undefined;
+    MainTabs: NavigatorScreenParams<MainTabParamList>;
     Settings: undefined;
     Help: undefined;
     Logout: undefined;
+    MyAccount: undefined;
 };
 
-export type JobListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'JobList'>;
-export type EventsScreenNavigationProp = NativeStackNavigationProp<
-    RootStackParamList,
-    'Events'
->;
+// Types pour le Root Stack
+export type RootStackParamList = {
+    Home: undefined;
+    Login: undefined;
+    MainApp: NavigatorScreenParams<DrawerParamList>;
+    Events: undefined;
+    JobList: undefined;
+    Scan: undefined;
+    ProfileDetail: { profileId: string };
+    ChatConversation: { chatId: string; name: string };
+};

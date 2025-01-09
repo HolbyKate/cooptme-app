@@ -1,38 +1,43 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { Home, Users, MessageSquare, UserCircle, Settings, HelpCircle, LogOut } from 'lucide-react-native';
+import { View, Platform } from 'react-native';
+import { UserCircle2, MessageSquare, Settings, HelpCircle, LogOut, Home, ScanLine } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { AuthContext } from '../contexts/AuthContext';
 
-// Import des écrans principaux
-import DashboardScreen from './DashboardScreen';
-import ContactsScreen from './ContactsScreen';
-import ChatScreen from './ChatScreen';
-import ProfilesScreen from './ProfilesScreen';
-import ScanScreen from './scanner/ScanScreen';
+// Import des écrans
+import DashboardScreen from '../screens/DashboardScreen';
+import MyAccountScreen from '../screens/MyAccountScreen';
+import ChatScreen from '../screens/ChatScreen';
+import ScanScreen from '../screens/scanner/ScanScreen';
+import SettingsScreen from './drawer/SettingsScreen';
+import HelpScreen from './drawer/HelpScreen';
 
-
-// Import des écrans du drawer
-import SettingsScreen from '../screens/drawer/SettingsScreen';
-import HelpScreen from '../screens/drawer/HelpScreen';
-import LogoutScreen from '../screens/drawer/LogoutScreen';
 
 // Import des types
-import { TabParamList, DrawerParamList } from '../types/navigation';
+import {  MainTabParamList, DrawerParamList } from '../types/navigation';
 
-const Tab = createBottomTabNavigator<TabParamList>();
+
 const Drawer = createDrawerNavigator<DrawerParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
+
+const EmptyComponent = () => <View />;
 
 function TabNavigator() {
     return (
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
-                tabBarShowLabel: false,
+                tabBarShowLabel: true,
                 tabBarStyle: {
                     borderTopWidth: 1,
                     borderTopColor: '#E0E0E0',
                     backgroundColor: '#FFFFFF',
-                    height: 60,
+                    height: Platform.OS === 'ios' ? 80 : 60,
+                    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+                    position: 'absolute',
+                    bottom: 0,
                 },
                 tabBarActiveTintColor: '#4247BD',
                 tabBarInactiveTintColor: '#666666',
@@ -42,28 +47,40 @@ function TabNavigator() {
                 name="Dashboard"
                 component={DashboardScreen}
                 options={{
-                    tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+                    tabBarLabel: 'Accueil',
+                    tabBarIcon: ({ color, size }) => (
+                        <Home size={size} color={color} strokeWidth={1.5} />
+                    ),
                 }}
             />
             <Tab.Screen
-                name="Contacts"
-                component={ContactsScreen}
+                name="MyAccount"
+                component={MyAccountScreen}
                 options={{
-                    tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
+                    tabBarLabel: 'Profil',
+                    tabBarIcon: ({ color, size }) => (
+                        <UserCircle2 size={size} color={color} strokeWidth={1.5} />
+                    ),
                 }}
             />
             <Tab.Screen
                 name="Chat"
                 component={ChatScreen}
                 options={{
-                    tabBarIcon: ({ color, size }) => <MessageSquare size={size} color={color} />,
+                    tabBarLabel: 'Messages',
+                    tabBarIcon: ({ color, size }) => (
+                        <MessageSquare size={size} color={color} strokeWidth={1.5} />
+                    ),
                 }}
             />
             <Tab.Screen
-                name="Profiles"
-                component={ProfilesScreen}
+                name="Scan"
+                component={ScanScreen}
                 options={{
-                    tabBarIcon: ({ color, size }) => <UserCircle size={size} color={color} />,
+                    tabBarLabel: 'Scanner',
+                    tabBarIcon: ({ color, size }) => (
+                        <ScanLine size={size} color={color} strokeWidth={1.5} />
+                    ),
                 }}
             />
         </Tab.Navigator>
@@ -71,35 +88,65 @@ function TabNavigator() {
 }
 
 function DrawerNavigator() {
+    const { signOut } = useContext(AuthContext);
+    const navigation = useNavigation();
+
+    const handleLogout = async () => {
+        try {
+            await signOut();
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' as never }],
+            });
+        } catch (error) {
+            console.error('Erreur lors de la déconnexion:', error);
+        }
+    };
+
     return (
         <Drawer.Navigator
             screenOptions={{
                 headerShown: false,
                 drawerStyle: {
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: '#4247BD',
                     width: 280,
+                    paddingTop: 50,
                 },
                 drawerLabelStyle: {
-                    color: '#333333',
-                    marginLeft: -16,
+                    color: '#fef9f9',
+                    marginLeft: 16,
+                    fontSize: 16,
                 },
-                drawerActiveTintColor: '#4247BD',
-                drawerInactiveTintColor: '#666666',
+                drawerItemStyle: {
+                    borderRadius: 0,
+                    marginVertical: 0,
+                    paddingVertical: 5,
+                },
+                drawerActiveTintColor: '#ff8f66',
+                drawerInactiveTintColor: 'rgba(254, 249, 249, 0.7)',
             }}
         >
             <Drawer.Screen
                 name="MainTabs"
                 component={TabNavigator}
                 options={{
-                    drawerLabel: 'Accueil',
+                    drawerLabel: 'Dashboard',
                     drawerIcon: ({ color }) => <Home size={24} color={color} />,
+                }}
+            />
+            <Drawer.Screen
+                name="MyAccount"
+                component={MyAccountScreen}
+                options={{
+                    drawerLabel: 'Mon Compte',
+                    drawerIcon: ({ color }) => <UserCircle2 size={24} color={color} />,
                 }}
             />
             <Drawer.Screen
                 name="Settings"
                 component={SettingsScreen}
                 options={{
-                    drawerIcon: ({ color }) => <Settings size={24} color={color} />,
+                    drawerIcon: ({ color }) => <Settings size={24} color={color} strokeWidth={1.5} />,
                     drawerLabel: 'Paramètres',
                 }}
             />
@@ -107,16 +154,28 @@ function DrawerNavigator() {
                 name="Help"
                 component={HelpScreen}
                 options={{
-                    drawerIcon: ({ color }) => <HelpCircle size={24} color={color} />,
+                    drawerIcon: ({ color }) => <HelpCircle size={24} color={color} strokeWidth={1.5} />,
                     drawerLabel: 'Aide',
                 }}
             />
             <Drawer.Screen
                 name="Logout"
-                component={LogoutScreen}
+                component={EmptyComponent}
+                listeners={{
+                    drawerItemPress: () => {
+                        handleLogout();
+                        return false;
+                    },
+                }}
                 options={{
-                    drawerIcon: ({ color }) => <LogOut size={24} color={color} />,
+                    drawerIcon: ({ color }) => <LogOut size={24} color={color} strokeWidth={1.5} />,
                     drawerLabel: 'Déconnexion',
+                    drawerItemStyle: {
+                        marginTop: 'auto',
+                        paddingBottom: 20,
+                        borderTopWidth: 1,
+                        borderTopColor: 'rgba(254, 249, 249, 0.2)',
+                    },
                 }}
             />
         </Drawer.Navigator>

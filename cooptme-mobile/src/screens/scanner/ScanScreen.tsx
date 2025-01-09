@@ -15,11 +15,11 @@ import LinkedInBrowser from "../../components/LinkedInBrowser";
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, TabParamList } from '../../types/navigation';
+import { RootStackParamList, MainTabParamList } from '../../types/navigation';
 import { LinkedInProfile } from "../../utils/linkedinScraper";
 
 type ScanScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<TabParamList>,
+  BottomTabNavigationProp<MainTabParamList>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 
@@ -52,8 +52,8 @@ export default function ScanScreen({ navigation }: Props) {
   const handleProfileScraped = (profile: LinkedInProfile) => {
     setLinkedInBrowserVisible(false);
     qrLock.current = false;
-    // Optionnel : naviguer vers Profiles après le scraping
-    navigation.navigate('Profiles', { userId: profile.id });
+    // Optionnel : naviguer vers ProfileDetail après le scraping
+    navigation.navigate('ProfileDetail', { profileId: profile.id });
   };
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {

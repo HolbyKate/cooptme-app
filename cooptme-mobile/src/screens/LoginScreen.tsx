@@ -13,10 +13,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import * as WebBrowser from 'expo-web-browser';
 import { CONFIG } from '../middleware/api.middleware';
-import { NavigatorScreenParams } from '@react-navigation/native';
-import { TabParamList } from '../types/navigation';
 
-// Initialiser WebBrowser
 WebBrowser.maybeCompleteAuthSession();
 
 const googleConfig = {
@@ -29,9 +26,10 @@ const googleConfig = {
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
+  // États pour l'authentification de test pré-remplis
+  const [email, setEmail] = useState('test@test.com');
+  const [password, setPassword] = useState('test123');
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,14 +45,32 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleEmailAuth = async () => {
     try {
-      const fakeToken = 'fake-token-123';
-      await signIn(fakeToken);
-      navigation.replace('MainApp', {
-        screen: 'Dashboard'
-      });
+      setIsLoading(true);
+      // Authentification de test
+      if (email === 'test@test.com' && password === 'test123') {
+        const fakeToken = 'fake-token-123';
+        const fakeUser = {
+          id: '1',
+          email: 'test@test.com',
+          name: 'Cathy'
+        };
+        await signIn(fakeToken);
+        navigation.replace('MainApp', { screen: 'MainTabs', params: { screen: 'Profiles', params: { userId: fakeUser.id } } });
+        return;
+      }
+      // Authentification normale si ce n'est pas le compte de test
+      const response = await authService.login({ email, password });
+      if (response?.token) {
+        await signIn(response.token);
+        if (response.user?.id) {
+          navigation.replace('MainApp', { screen: 'MainTabs', params: { screen: 'Profiles', params: { userId: response.user.id } } });
+        }
+      }
     } catch (error) {
       console.error('Erreur:', error);
-      setErrorMessage('Une erreur est survenue');
+      setErrorMessage('Email ou mot de passe incorrect');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -63,7 +79,6 @@ export default function LoginScreen({ navigation }: Props) {
       setErrorMessage('Veuillez entrer votre email');
       return;
     }
-
     setIsLoading(true);
     try {
       await authService.forgotPassword(email);
@@ -83,13 +98,10 @@ export default function LoginScreen({ navigation }: Props) {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-
       const result = await authService.handleAppleLogin(credential);
       if (result.token) {
         await signIn(result.token);
-        navigation.replace('MainApp', {
-          screen: 'Dashboard'
-        });
+        navigation.replace('MainApp', { screen: 'MainTabs', params: { screen: 'Profiles', params: { userId: result.user?.id } } });
       }
     } catch (error: any) {
       setErrorMessage(error.message || 'Erreur de connexion Apple');
@@ -103,9 +115,7 @@ export default function LoginScreen({ navigation }: Props) {
         const userInfo = await authService.handleGoogleLogin(result.authentication.accessToken);
         if (userInfo.token) {
           await signIn(userInfo.token);
-          navigation.replace('MainApp', {
-            screen: 'Dashboard'
-          });
+          navigation.replace('MainApp', { screen: 'MainTabs', params: { screen: 'Profiles', params: { userId: userInfo.user?.id } } });
         }
       }
     } catch (error) {
@@ -114,36 +124,7 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
-  useEffect(() => {
-    const testConnection = async () => {
-      try {
-        const response = await fetch(`${CONFIG.API_URL}/test`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Test de connexion réussi:', {
-          status: response.status,
-          data: data
-        });
-      } catch (error: any) {
-        console.error('Erreur détaillée du test de connexion:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack
-        });
-      }
-    };
-    testConnection();
-  }, []);
-
+  // Le reste du code restant identique, y compris le rendu et les styles
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -268,6 +249,7 @@ export default function LoginScreen({ navigation }: Props) {
   );
 }
 
+// Les styles restent identiques
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -39,4 +39,4 @@ export interface SocialAuthCredential {
   firstName?: string;
   lastName?: string;
   provider: 'google' | 'apple' | 'auth0';
-} 
+}
