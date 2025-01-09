@@ -1,4 +1,5 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import JobScreen from '../screens/JobScreen';
 
 // Types pour le Tab Navigator principal
 export type MainTabParamList = {

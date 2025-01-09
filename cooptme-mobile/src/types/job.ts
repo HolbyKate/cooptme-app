@@ -1,12 +1,16 @@
-export interface JobOffer {
+export type JobOffer = {
     id: string;
     title: string;
     company: string;
     location: string;
     description: string;
-    url: string;
-    postedDate: string;
     contractType: string;
-    salary: string;
-    isActive: boolean;
-}
+    salary?: string;
+    postedDate: string;
+    url?: string;
+};
+
+export type JobApiResponse = {
+    data: JobOffer[];
+    message?: string;
+};

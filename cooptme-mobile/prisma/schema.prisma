@@ -17,3 +17,27 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model JobOffer {
+  id            String   @id @default(uuid())
+  title         String
+  company       String
+  location      String
+  description   String   @db.Text
+  contractType  String
+  salary        String?
+  postedDate    DateTime @default(now())
+  url           String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("job_offers")
+}

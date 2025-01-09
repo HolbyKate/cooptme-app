@@ -5,7 +5,7 @@ import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import MainAppScreen from '../screens/MainAppScreen';
 import EventsScreen from '../screens/EventsScreen';
-import JobScreen from '../screens/JobsScreen';
+import JobListScreen from '../screens/JobScreen';
 import ScanScreen from '../screens/scanner/ScanScreen';
 import ProfileDetailScreen from '../screens/ProfileDetailScreen';
 import ChatConversationScreen from '../screens/ChatConversationScreen';
@@ -23,19 +23,16 @@ export default function AppNavigator() {
                     gestureEnabled: true,
                     gestureDirection: 'horizontal',
                     animation: 'slide_from_right',
-                }}
-            >
-                <Stack.Screen name="Home" component={HomeScreen} />
-                <Stack.Screen name="Login" component={LoginScreen} />
-                <Stack.Screen name="MainApp" component={MainAppScreen} />
-                <Stack.Screen name="Events" component={EventsScreen} />
-                <Stack.Screen name="JobList" component={JobScreen} />
-                <Stack.Screen name="Scan" component={ScanScreen} />
-                <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
-                <Stack.Screen
-                    name="ChatConversation"
-                    component={ChatConversationScreen as React.ComponentType<any>}
-                />
+                    animationDuration: 200,
+                }}>
+                <Stack.Screen name="Home" component={HomeScreen}/>
+                <Stack.Screen name="Login" component={LoginScreen}/>
+                <Stack.Screen name="MainApp" component={MainAppScreen}/>
+                <Stack.Screen name="Events" component={EventsScreen}/>
+                <Stack.Screen name="JobList" component={JobListScreen}/>
+                <Stack.Screen name="Scan" component={ScanScreen}/>
+                <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen}/>
+                <Stack.Screen name="ChatConversation" component={ChatConversationScreen as React.ComponentType<any>}/>
             </Stack.Navigator>
         </NavigationContainer>
     );

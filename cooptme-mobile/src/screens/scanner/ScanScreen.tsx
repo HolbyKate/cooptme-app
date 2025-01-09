@@ -1,30 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Camera, CameraView } from "expo-camera";
+import { CameraView, Camera as ExpoCamera } from 'expo-camera';
 import {
   AppState,
-  Linking,
   Platform,
   SafeAreaView,
   StatusBar,
   StyleSheet,
-  Button,
-  View,
+  Alert,
+  Text,
 } from "react-native";
 import { Overlay } from "./Overlay";
 import LinkedInBrowser from "../../components/LinkedInBrowser";
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, MainTabParamList } from '../../types/navigation';
 import { LinkedInProfile } from "../../utils/linkedinScraper";
-
-type ScanScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList>,
-  NativeStackNavigationProp<RootStackParamList>
->;
+import { profileService } from "../../services/profileService";
+import { CategoryTitle } from '../../types/contacts';
+import { Gender } from '../../types/linkedinProfile';
 
 type Props = {
-  navigation: ScanScreenNavigationProp;
+  navigation: any;
 };
 
 export default function ScanScreen({ navigation }: Props) {
@@ -32,8 +25,15 @@ export default function ScanScreen({ navigation }: Props) {
   const appState = useRef(AppState.currentState);
   const [isLinkedInBrowserVisible, setLinkedInBrowserVisible] = useState(false);
   const [profileUrl, setProfileUrl] = useState<string>("");
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
+    const getCameraPermission = async () => {
+      const { status } = await ExpoCamera.requestCameraPermissionsAsync();
+      setHasPermission(status === "granted");
+    };
+
+    getCameraPermission();
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (
         appState.current.match(/inactive|background/) &&
@@ -49,32 +49,69 @@ export default function ScanScreen({ navigation }: Props) {
     };
   }, []);
 
-  const handleProfileScraped = (profile: LinkedInProfile) => {
-    setLinkedInBrowserVisible(false);
-    qrLock.current = false;
-    // Optionnel : naviguer vers ProfileDetail après le scraping
-    navigation.navigate('ProfileDetail', { profileId: profile.id });
+  const handleProfileScraped = async (scrapedProfile: LinkedInProfile) => {
+    try {
+      const completeProfile = {
+        ...scrapedProfile,
+        category: 'À qualifier' as CategoryTitle,
+        photoId: null,
+        gender: 'unknown' as Gender
+      };
+      await profileService.saveProfile(completeProfile);
+      Alert.alert(
+        "Succès",
+        "Le profil a été ajouté avec succès",
+        [
+          {
+            text: "Voir les profils",
+            onPress: () => navigation.navigate('Profiles', { userId: undefined })
+          },
+          {
+            text: "Scanner un autre",
+            onPress: () => {
+              setLinkedInBrowserVisible(false);
+              qrLock.current = false;
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible d'enregistrer le profil.");
+      qrLock.current = false;
+    }
   };
 
-  const handleBarCodeScanned = async ({ data }: { data: string }) => {
+  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
+    console.log("QR Code détecté :", { type, data });
     if (data && !qrLock.current) {
       qrLock.current = true;
-      if (data.includes('linkedin.com/in/')) {
+      if (data.includes("linkedin.com/in/")) {
         setProfileUrl(data);
         setLinkedInBrowserVisible(true);
       } else {
-        setTimeout(async () => {
-          await Linking.openURL(data);
-        }, 500);
+        Alert.alert(
+          "QR Code invalide",
+          "Ce QR code ne contient pas de profil LinkedIn valide.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                qrLock.current = false;
+              }
+            }
+          ]
+        );
       }
     }
   };
 
-  const handleTestLinkedIn = () => {
-    // URL de test - à remplacer par une URL LinkedIn valide
-    setProfileUrl('https://www.linkedin.com/in/satyanadella/');
-    setLinkedInBrowserVisible(true);
-  };
+  if (hasPermission === null) {
+    return <Text>Demande d'autorisation de la caméra...</Text>;
+  }
+
+  if (hasPermission === false) {
+    return <Text>Accès à la caméra refusé.</Text>;
+  }
 
   return (
     <SafeAreaView style={StyleSheet.absoluteFillObject}>
@@ -82,18 +119,12 @@ export default function ScanScreen({ navigation }: Props) {
       <CameraView
         style={StyleSheet.absoluteFillObject}
         facing="back"
+        barcodeScannerSettings={{
+          barcodeTypes: ['qr'],
+        }}
         onBarcodeScanned={handleBarCodeScanned}
       />
       <Overlay />
-
-      {/* Bouton de test */}
-      <View style={styles.testButtonContainer}>
-        <Button
-          title="Test LinkedIn"
-          onPress={handleTestLinkedIn}
-          color="#4247BD"
-        />
-      </View>
 
       <LinkedInBrowser
         isVisible={isLinkedInBrowserVisible}
@@ -109,45 +140,15 @@ export default function ScanScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  message: {
-    textAlign: 'center',
-    paddingBottom: 10,
-  },
-  camera: {
-    flex: 1,
-  },
-  buttonContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    margin: 64,
-  },
-  button: {
-    flex: 1,
-    alignSelf: 'flex-end',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-  },
   testButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     right: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 8,
     padding: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,

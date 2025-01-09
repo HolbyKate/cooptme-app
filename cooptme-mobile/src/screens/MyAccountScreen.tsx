@@ -25,7 +25,7 @@ export default function MyAccountScreen() {
         title: 'Full Stack Developer Student',
         company: 'Holberton School',
         linkedinUrl: 'https://www.linkedin.com/in/cathyaugustin',
-        photo: require('../../assets/cathy.jpg'),
+        photo: require('../../assets/default-avatar.png'),
     });
 
     const qrSlideAnim = useRef(new Animated.Value(200)).current;
@@ -79,7 +79,7 @@ export default function MyAccountScreen() {
                 <Image
                     source={userData.photo}
                     style={styles.avatar}
-                    defaultSource={require('../../assets/cathy.jpg')}
+                    defaultSource={require('../../assets/default-avatar.png')}
                 />
             );
         }

@@ -26,7 +26,7 @@ export const categories: Category[] = [
     { id: "7", title: "Project Manager", count: 45 },
     { id: "8", title: "Product Owner", count: 32 },
     { id: "9", title: "Customer Care Manager", count: 28 },
-    { id: "10", title: "Other", count: 28 }
+    { id: "10", title: "Other", count: 28 },
 ];
 
 export interface Contact {

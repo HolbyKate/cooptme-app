@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ScrollView, StyleSheet } from 'react-native';
 import { profileService } from "../../services/profileService";
 import { LinkedInProfile } from "../../types/linkedinProfile";
+import { CategoryTitle } from "../../types/contacts";
 
 export default function TestScreen() {
   const [profiles, setProfiles] = useState<LinkedInProfile[]>([]);
@@ -17,9 +18,9 @@ export default function TestScreen() {
         location: 'Paris, France',
         profileUrl: `https://linkedin.com/in/test-${Date.now()}`,
         scannedAt: new Date().toISOString(),
-        category: 'IT', // Ajout du champ requis
-        photoId: Math.floor(Math.random() * 100), // Ajout du champ requis
-        gender: Math.random() > 0.5 ? 'male' : 'female' // Ajout du champ requis
+        category: 'À qualifier' as CategoryTitle,
+        photoId: Math.floor(Math.random() * 100),
+        gender: Math.random() > 0.5 ? 'male' : 'female'
       };
 
       await profileService.syncLinkedInProfile(testProfile);
