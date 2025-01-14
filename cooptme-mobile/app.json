@@ -70,6 +70,14 @@
         {
           "domain": "dev-0t24v0qwt3cy3n7z.us.auth0.com"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./local/path/to/your/notification-icon.png",
+          "color": "#ffffff",
+          "sounds": ["./local/path/to/your/notification-sound.wav"]
+        }
       ]
     ],
     "scheme": "exp"

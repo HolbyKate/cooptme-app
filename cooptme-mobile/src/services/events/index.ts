@@ -6,47 +6,59 @@ export interface EventDTO {
   time?: string;
   location: string;
   organizer?: string;
-  type: 'job_fair' | 'conference' | 'meetup' | 'other';
+  type: 'job_fair' | 'conference' | 'meetup' | 'school' |'other';
   source: string;
   url?: string;
 }
 
 const mockEvents: EventDTO[] = [
-  {
+   {
     id: '1',
-    title: 'Meetup React Native',
-    description: 'Discussion sur les dernières fonctionnalités de React Native',
-    date: '2024-12-18',
+    title: 'DEMODAY C#21 Spécialisation FullStack',
+    description: 'Jury afin de découvrir de nouveaux talents',
+    date: '2025-01-30',
     time: '14:00 - 16:00',
-    location: 'Station F, Paris',
-    organizer: 'React France',
-    type: 'meetup',
-    source: 'Meetup.com',
-    url: 'https://example.com/meetup-react'
+    location: 'Village by CA, 31 Allée Jules Guesde à Toulouse',
+    organizer: 'Holberton School',
+    type: 'school',
+    source: 'Holberton School',
+    url: 'https://www.holbertonschool.fr/campus/toulouse'
   },
   {
     id: '2',
-    title: 'Forum de l\'emploi Tech',
-    description: 'Rencontrez les entreprises qui recrutent',
-    date: '2024-12-20',
-    time: '09:00 - 18:00',
-    location: 'Paris Expo',
-    organizer: 'TechRecruit',
-    type: 'job_fair',
-    source: 'JobTech',
-    url: 'https://example.com/forum-tech'
+    title: 'AI & Apéro',
+    description: 'Troisième Rencontre des Innovateurs Toulousains',
+    date: '2025-02-06',
+    time: '18:00 - 21:00',
+    location: 'Microsoft Lab (La Cité, Montaudran, 55 Av. Louis Breguet, 31400 Toulouse)',
+    organizer: 'Toulouse IA Innovateurs',
+    type: 'meetup',
+    source: 'Meet up',
+    url: 'https://www.meetup.com/fr-FR/ia-innovateurs/events/305048720/?recId=8b67e7a6-d413-44da-85e7-f9a7f35f9c9b&recSource=ml-popular-events-nearby-offline&searchId=2f457a07-1a72-417b-8599-241e2728172e&eventOrigin=find_page$all'
   },
   {
     id: '3',
-    title: 'Workshop Design System',
-    description: 'Apprenez à créer un design system efficace',
-    date: '2024-12-20',
-    time: '10:00 - 12:00',
-    location: 'La Défense',
-    organizer: 'UX Design France',
+    title: 'Mobile World Congress Barcelona 2025',
+    description: 'Rencontrez les entreprises qui recrutent',
+    date: '2025-03-03',
+    time: '09:00 - 18:00',
+    location: 'Fira Barcelona',
+    organizer: 'MWC',
+    type: 'job_fair',
+    source: 'MWC',
+    url: 'https://www.mwcbarcelona.com/'
+  },
+  {
+    id: '4',
+    title: 'Tech’Innov Sport',
+    description: 'Innovation & sport : découvrez les dernières tendances à la Conférence Tech’Innov Sport 2024. 300 participants, experts & networking !',
+    date: '2025-03-27',
+    time: '09:00 - 17:00',
+    location: '42 rue seveso 31150 Toulouse',
+    organizer: 'Eventbrite',
     type: 'conference',
     source: 'Eventbrite',
-    url: 'https://example.com/workshop-design'
+    url: 'https://www.eventbrite.fr/e/conference-techinnov-sport-2024-tickets-1117772560819?aff=ebdssbdestsearch&keep_tld=1'
   }
 ];
 
@@ -59,8 +71,6 @@ export const EventService = {
   // Ajout de la méthode refreshEvents
   refreshEvents: async (): Promise<EventDTO[]> => {
     await new Promise(resolve => setTimeout(resolve, 800));
-    // Dans un vrai service, on ferait un nouvel appel à l'API
-    // Pour l'instant, on retourne les mêmes données mockées
     return mockEvents;
   },
 

@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { View, Platform } from 'react-native';
-import { UserCircle2, MessageSquare, Settings, HelpCircle, LogOut, Home, ScanLine } from 'lucide-react-native';
+import { UserCircle2, MessageSquare, Settings, HelpCircle, LogOut, Home, ScanLine, UsersRound, CalendarDays } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../contexts/AuthContext';
 
@@ -13,6 +13,9 @@ import ChatScreen from '../screens/ChatScreen';
 import ScanScreen from '../screens/scanner/ScanScreen';
 import SettingsScreen from './drawer/SettingsScreen';
 import HelpScreen from './drawer/HelpScreen';
+import ContactsScreen from './ContactsScreen';
+import ProfilesScreen from './ProfilesScreen';
+import CalendarScreen from './CalendarScreen';
 
 
 // Import des types
@@ -21,7 +24,6 @@ import {  MainTabParamList, DrawerParamList } from '../types/navigation';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
-
 const EmptyComponent = () => <View />;
 
 function TabNavigator() {
@@ -61,32 +63,32 @@ function TabNavigator() {
                 }}
             />
             <Tab.Screen
-                name="MyAccount"
-                component={MyAccountScreen}
+                name="Contacts"
+                component={ContactsScreen}
                 options={{
-                    tabBarLabel: 'Profil',
+                    tabBarLabel: 'Contacts',
+                    tabBarIcon: ({ color, size }) => (
+                        <UsersRound size={size} color={color} strokeWidth={1.5} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Profiles"
+                component={ProfilesScreen}
+                options={{
+                    tabBarLabel: 'Profils',
                     tabBarIcon: ({ color, size }) => (
                         <UserCircle2 size={size} color={color} strokeWidth={1.5} />
                     ),
                 }}
             />
             <Tab.Screen
-                name="Chat"
-                component={ChatScreen}
+                name="Calendar"
+                component={CalendarScreen}
                 options={{
-                    tabBarLabel: 'Messages',
+                    tabBarLabel: 'Calendrier',
                     tabBarIcon: ({ color, size }) => (
-                        <MessageSquare size={size} color={color} strokeWidth={1.5} />
-                    ),
-                }}
-            />
-            <Tab.Screen
-                name="Scan"
-                component={ScanScreen}
-                options={{
-                    tabBarLabel: 'Scanner',
-                    tabBarIcon: ({ color, size }) => (
-                        <ScanLine size={size} color={color} strokeWidth={1.5} />
+                        <CalendarDays size={size} color={color} strokeWidth={1.5} />
                     ),
                 }}
             />

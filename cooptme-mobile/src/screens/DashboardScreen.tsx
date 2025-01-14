@@ -9,6 +9,7 @@ import {
   Platform,
   Image,
   Animated,
+  Alert,
 } from 'react-native';
 import {
   Bell,
@@ -19,6 +20,7 @@ import {
   MessageCircle,
   ScanLine,
   Briefcase,
+  CalendarDays,
 } from 'lucide-react-native';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,13 +42,11 @@ type CardItem = {
   id: number;
   title: string;
   screen: NavigationScreens;
-  icon: React.FC<any>; // ou le type exact de vos icônes si vous l'avez
-  params?: {
+  icon: React.FC<any>;
     userId?: string;
     chatId?: string;
     name?: string;
     profileId?: string;
-  } | undefined;
 };
 
 const cardItems: CardItem[] = [
@@ -58,30 +58,36 @@ const cardItems: CardItem[] = [
   },
   {
     id: 2,
-    title: 'Profiles',
+    title: 'Profils',
     screen: 'Profiles',
     icon: (props) => <UserCircle2 {...props} strokeWidth={1.5} />,
   },
   {
     id: 3,
-    title: 'Events',
+    title: 'Événements',
     screen: 'Events',
     icon: (props) => <PartyPopper {...props} strokeWidth={1.5} />,
   },
   {
     id: 4,
+    title: 'Calendrier',
+    screen: 'Calendar',
+    icon: (props) => <CalendarDays {...props} strokeWidth={1.5} />,
+  },
+  {
+    id: 5,
     title: 'Messages',
     screen: 'Chat',
     icon: (props) => <MessageCircle {...props} strokeWidth={1.5} />,
   },
   {
-    id: 5,
+    id: 6,
     title: 'Emplois',
     screen: 'JobList',
     icon: (props) => <Briefcase {...props} strokeWidth={1.5} />,
   },
   {
-    id: 6,
+    id: 7,
     title: 'Scanner',
     screen: 'Scan',
     icon: (props) => <ScanLine {...props} strokeWidth={1.5} />,
@@ -117,17 +123,33 @@ export default function DashboardScreen(): JSX.Element {
   const handleNavigation = (screen: NavigationScreens, params?: object) => {
     try {
       switch (screen) {
-        case 'Contacts':
+        case 'Calendar':
+          navigation.navigate('MainApp', {
+            screen: 'MainTabs',
+            params: {
+              screen: 'Calendar'
+            }
+          });
+          break;
+
         case 'Profiles':
+          navigation.navigate('MainApp', {
+            screen: 'MainTabs',
+            params: {
+              screen: 'Profiles'
+            }
+          });
+          break;
+
+        case 'Contacts':
         case 'Chat':
         case 'Scan':
           navigation.navigate('MainApp', {
             screen: 'MainTabs',
             params: {
-              screen,
-              params
+              screen
             }
-          } as NavigatorScreenParams<DrawerParamList>);
+          });
           break;
 
         case 'Events':
@@ -184,7 +206,7 @@ export default function DashboardScreen(): JSX.Element {
             <TouchableOpacity
               key={item.id}
               style={styles.menuItem}
-              onPress={() => handleNavigation(item.screen, item.params)}
+              onPress={() => handleNavigation(item.screen)}
             >
               <View style={styles.iconContainer}>
                 <item.icon color="#4247BD" size={32} />
@@ -289,17 +311,17 @@ const styles = StyleSheet.create({
     width: 65,
     height: 65,
     borderRadius: 25,
-    backgroundColor: 'rgba(66, 71, 189, 0.08)',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(66, 71, 189, 0.15)',
+    borderColor: '#FF8F66',
   },
   menuItemText: {
     fontSize: 16,
     color: '#4247BD',
-    fontWeight: '500',
+    fontWeight: '600',
     textAlign: 'center',
   },
 });

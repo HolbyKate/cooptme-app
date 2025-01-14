@@ -17,6 +17,14 @@ import { Linking } from "react-native";
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types/navigation';
 
+const eventTypeLabels = {
+  job_fair: "🎯 Salon Emploi",
+  conference: "🎤 Conférence",
+  meetup: "👥 Meetup",
+  school: "🎓 Ecole",
+  other: "📅 Événement"
+} as const;
+
 export default function EventsScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [events, setEvents] = useState<EventDTO[]>([]);
@@ -62,13 +70,7 @@ export default function EventsScreen() {
       <View style={styles.eventHeader}>
         <Text style={styles.eventSource}>{item.source}</Text>
         <Text style={styles.eventType}>
-          {item.type === "job_fair"
-            ? "🎯 Salon Emploi"
-            : item.type === "conference"
-              ? "🎤 Conférence"
-              : item.type === "meetup"
-                ? "👥 Meetup"
-                : "📅 Événement"}
+          {eventTypeLabels[item.type] || eventTypeLabels.other}
         </Text>
       </View>
 
@@ -220,6 +222,10 @@ const styles = StyleSheet.create({
   },
   eventDetails: {
     marginBottom: 12,
+  },
+  eventLogo: {
+    width: 100,
+    height: 40,
   },
   detailRow: {
     flexDirection: "row",

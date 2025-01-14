@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   contactCard: {
     flexDirection: 'row',
     padding: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FF8F66',
     borderRadius: 10,
     marginBottom: 15,
     shadowColor: '#000',

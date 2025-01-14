@@ -85,7 +85,7 @@ export default function ScanScreen({ navigation }: Props) {
     console.log("QR Code détecté :", { type, data });
     if (data && !qrLock.current) {
       qrLock.current = true;
-      if (data.includes("linkedin.com/in/")) {
+      if (data.includes("")) {
         setProfileUrl(data);
         setLinkedInBrowserVisible(true);
       } else {

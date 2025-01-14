@@ -1,8 +1,15 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import {
-  View, TextInput, TouchableOpacity, Text, StyleSheet,
-  Platform, KeyboardAvoidingView, ScrollView, Image,
-  ActivityIndicator
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Google from 'expo-auth-session/providers/google';
@@ -12,7 +19,6 @@ import { authService } from '../services/auth.service';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import * as WebBrowser from 'expo-web-browser';
-import { CONFIG } from '../middleware/api.middleware';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -26,7 +32,6 @@ const googleConfig = {
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  // États pour l'authentification de test pré-remplis
   const [email, setEmail] = useState('test@test.com');
   const [password, setPassword] = useState('test123');
   const [isLogin, setIsLogin] = useState(true);
@@ -43,32 +48,62 @@ export default function LoginScreen({ navigation }: Props) {
     clientId: googleConfig.expoClientId,
   });
 
+  const navigateToMain = () => {
+    navigation.replace('MainApp', {
+      screen: 'MainTabs',
+      params: {
+        screen: 'Dashboard'
+      }
+    });
+  };
+
   const handleEmailAuth = async () => {
+    if (!email || !password) {
+      setErrorMessage('Veuillez remplir tous les champs');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      // Authentification de test
-      if (email === 'test@test.com' && password === 'test123') {
-        const fakeToken = 'fake-token-123';
-        const fakeUser = {
-          id: '1',
-          email: 'test@test.com',
-          name: 'Cathy'
-        };
-        await signIn(fakeToken);
-        navigation.replace('MainApp', { screen: 'MainTabs', params: { screen: 'Profiles', params: { userId: fakeUser.id } } });
-        return;
-      }
-      // Authentification normale si ce n'est pas le compte de test
-      const response = await authService.login({ email, password });
-      if (response?.token) {
-        await signIn(response.token);
-        if (response.user?.id) {
-          navigation.replace('MainApp', { screen: 'MainTabs', params: { screen: 'Profiles', params: { userId: response.user.id } } });
+      setErrorMessage('');
+
+      if (!isLogin) {
+        // Inscription
+        if (!firstName || !lastName) {
+          setErrorMessage('Veuillez remplir tous les champs');
+          return;
+        }
+
+        const response = await authService.register({
+          email,
+          password,
+          name: `${firstName} ${lastName}`,
+        });
+
+        if (response?.token) {
+          await signIn(response.token);
+          navigateToMain();
+        }
+      } else {
+        // Connexion
+        if (email === 'test@test.com' && password === 'test123') {
+          const fakeToken = 'fake-token-123';
+          await signIn(fakeToken);
+          navigateToMain();
+          return;
+        }
+
+        const response = await authService.login({ email, password });
+        if (response?.token) {
+          await signIn(response.token);
+          navigateToMain();
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur:', error);
-      setErrorMessage('Email ou mot de passe incorrect');
+      setErrorMessage(
+        error.message || 'Une erreur est survenue lors de l\'authentification'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -79,6 +114,7 @@ export default function LoginScreen({ navigation }: Props) {
       setErrorMessage('Veuillez entrer votre email');
       return;
     }
+
     setIsLoading(true);
     try {
       await authService.forgotPassword(email);
@@ -92,39 +128,62 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleAppleAuth = async () => {
     try {
+      setIsLoading(true);
+      setErrorMessage('');
+
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
+
       const result = await authService.handleAppleLogin(credential);
       if (result.token) {
         await signIn(result.token);
-        navigation.replace('MainApp', { screen: 'MainTabs', params: { screen: 'Profiles', params: { userId: result.user?.id } } });
+        navigateToMain();
       }
     } catch (error: any) {
-      setErrorMessage(error.message || 'Erreur de connexion Apple');
+      if (error.code !== 'ERR_REQUEST_CANCELED') {
+        setErrorMessage(error.message || 'Erreur de connexion Apple');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
+      setIsLoading(true);
+      setErrorMessage('');
+
       const result = await promptAsync();
       if (result?.type === 'success' && result.authentication) {
-        const userInfo = await authService.handleGoogleLogin(result.authentication.accessToken);
+        const userInfo = await authService.handleGoogleLogin(
+          result.authentication.accessToken
+        );
         if (userInfo.token) {
           await signIn(userInfo.token);
-          navigation.replace('MainApp', { screen: 'MainTabs', params: { screen: 'Profiles', params: { userId: userInfo.user?.id } } });
+          navigateToMain();
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur de connexion Google:', error);
       setErrorMessage('Erreur de connexion avec Google');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Le reste du code restant identique, y compris le rendu et les styles
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
+    setErrorMessage('');
+    setEmail('');
+    setPassword('');
+    setFirstName('');
+    setLastName('');
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -153,45 +212,50 @@ export default function LoginScreen({ navigation }: Props) {
           {!isLogin && (
             <>
               <TextInput
-                style={styles.input}
+                style={[styles.input, !firstName && errorMessage ? styles.inputError : null]}
                 placeholder="Prénom"
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholderTextColor="#666"
+                autoCapitalize="words"
               />
               <TextInput
-                style={styles.input}
+                style={[styles.input, !lastName && errorMessage ? styles.inputError : null]}
                 placeholder="Nom"
                 value={lastName}
                 onChangeText={setLastName}
                 placeholderTextColor="#666"
+                autoCapitalize="words"
               />
             </>
           )}
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, !email && errorMessage ? styles.inputError : null]}
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             placeholderTextColor="#666"
+            autoComplete="email"
           />
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, !password && errorMessage ? styles.inputError : null]}
             placeholder="Mot de passe"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             placeholderTextColor="#666"
+            autoComplete="password"
           />
 
           {isLogin && (
             <TouchableOpacity
               onPress={handleForgotPassword}
               style={styles.forgotPassword}
+              disabled={isLoading}
             >
               <Text style={styles.forgotPasswordText}>
                 Mot de passe oublié ?
@@ -200,7 +264,7 @@ export default function LoginScreen({ navigation }: Props) {
           )}
 
           <TouchableOpacity
-            style={styles.mainButton}
+            style={[styles.mainButton, isLoading && styles.buttonDisabled]}
             onPress={handleEmailAuth}
             disabled={isLoading}
           >
@@ -214,7 +278,7 @@ export default function LoginScreen({ navigation }: Props) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.googleButton}
+            style={[styles.googleButton, isLoading && styles.buttonDisabled]}
             onPress={handleGoogleSignIn}
             disabled={isLoading}
           >
@@ -228,14 +292,15 @@ export default function LoginScreen({ navigation }: Props) {
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
               cornerRadius={5}
-              style={styles.appleButton}
+              style={[styles.appleButton, isLoading && styles.buttonDisabled]}
               onPress={handleAppleAuth}
             />
           )}
 
           <TouchableOpacity
             style={styles.switchButton}
-            onPress={() => setIsLogin(!isLogin)}
+            onPress={toggleAuthMode}
+            disabled={isLoading}
           >
             <Text style={styles.switchButtonText}>
               {isLogin
@@ -249,7 +314,6 @@ export default function LoginScreen({ navigation }: Props) {
   );
 }
 
-// Les styles restent identiques
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -279,7 +343,7 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 10,
+    borderRadius: 15,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
@@ -298,7 +362,7 @@ const styles = StyleSheet.create({
   mainButton: {
     width: '100%',
     backgroundColor: '#FF8F66',
-    borderRadius: 25,
+    borderRadius: 15,
     padding: 15,
     alignItems: 'center',
     marginTop: 20,
@@ -312,7 +376,7 @@ const styles = StyleSheet.create({
   googleButton: {
     width: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 25,
+    borderRadius: 15,
     padding: 15,
     alignItems: 'center',
     marginBottom: 15,

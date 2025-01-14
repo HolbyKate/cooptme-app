@@ -1,14 +1,16 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
-import JobScreen from '../screens/JobScreen';
 
 // Types pour le Tab Navigator principal
 export type MainTabParamList = {
     Dashboard: undefined;
-    MyAccount: undefined;
+    Events: undefined;
+    JobList: undefined;
+    Calendar: undefined;
     Chat: undefined;
-    Scan: undefined;
-    Profiles: { userId?: string };
+    Profiles: undefined;
     Contacts: undefined;
+    Scan: undefined;
+    MyAccount: undefined;
 };
 
 // Types pour le Drawer
@@ -22,12 +24,18 @@ export type DrawerParamList = {
 
 // Types pour le Root Stack
 export type RootStackParamList = {
-    Home: undefined;
-    Login: undefined;
     MainApp: NavigatorScreenParams<DrawerParamList>;
+    Dashboard: undefined;
     Events: undefined;
     JobList: undefined;
+    Calendar: undefined;
+    Chat: undefined;
+    Profiles: undefined;
+    Contacts: undefined;
     Scan: undefined;
     ProfileDetail: { profileId: string };
     ChatConversation: { chatId: string; name: string };
+    Home: undefined;
+    Login: undefined;
+    MyAccount: undefined;
 };
