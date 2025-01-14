@@ -10,11 +10,10 @@ import {
   SafeAreaView,
   Platform,
   Alert,
-  Dimensions,
 } from 'react-native';
-import { Calendar, DateData, AgendaList, CalendarProvider, ExpandableCalendar } from 'react-native-calendars';
-import { Menu, Edit2, Trash2, Search, Bell, Tag, Calendar as CalendarIcon, List } from 'lucide-react-native';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { Calendar, DateData } from 'react-native-calendars';
+import { Menu, Edit2, Trash2, Search, Calendar as CalendarIcon, List } from 'lucide-react-native';
+import { useNavigation, DrawerActions, useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
@@ -28,6 +27,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Types
 type EventCategory = {
   id: string;
   name: string;
@@ -54,17 +54,16 @@ const DEFAULT_CATEGORIES: EventCategory[] = [
 ];
 
 const STORAGE_KEY = 'calendar_events';
-const CATEGORIES_KEY = 'calendar_categories';
 
 export default function CalendarScreen() {
   const navigation = useNavigation();
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [events, setEvents] = useState<{ [key: string]: Event[] }>({});
-  const [categories, setCategories] = useState<EventCategory[]>(DEFAULT_CATEGORIES);
+  const [categories] = useState<EventCategory[]>(DEFAULT_CATEGORIES);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [modalVisible, setModalVisible] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
@@ -81,11 +80,12 @@ export default function CalendarScreen() {
     endTime: new Date(),
     categoryId: DEFAULT_CATEGORIES[0].id,
   });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadData();
     requestNotificationPermissions();
-  }, []);
+  }, [refreshKey]);
 
   const requestNotificationPermissions = async () => {
     const { status } = await Notifications.requestPermissionsAsync();
@@ -96,20 +96,14 @@ export default function CalendarScreen() {
 
   const loadData = async () => {
     try {
-      const [storedEvents, storedCategories] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY),
-        AsyncStorage.getItem(CATEGORIES_KEY),
-      ]);
-
+      const storedEvents = await AsyncStorage.getItem(STORAGE_KEY);
       if (storedEvents) {
-        setEvents(JSON.parse(storedEvents));
-      }
-      if (storedCategories) {
-        setCategories(JSON.parse(storedCategories));
+        const parsedEvents = JSON.parse(storedEvents);
+        console.log('Événements chargés:', parsedEvents);
+        setEvents(parsedEvents);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
-      Alert.alert('Erreur', 'Impossible de charger les données');
     }
   };
 
@@ -143,6 +137,7 @@ export default function CalendarScreen() {
   };
 
   const handleSearchSubmit = () => {
+    if (!searchQuery.trim()) return [];
     const searchResults: Event[] = [];
     Object.values(events).forEach(dayEvents => {
       dayEvents.forEach(event => {
@@ -158,14 +153,9 @@ export default function CalendarScreen() {
   };
 
   const saveEvent = async () => {
-    if (newEvent.title.trim() === '') {
-      Alert.alert('Erreur', 'Le titre est obligatoire');
-      return;
-    }
-
     try {
-      const eventData: Event = {
-        id: editingEvent?.id || Math.random().toString(),
+      const eventToSave: Event = {
+        id: editingEvent?.id || `event_${Date.now()}`,
         title: newEvent.title,
         description: newEvent.description,
         date: selectedDate,
@@ -174,31 +164,30 @@ export default function CalendarScreen() {
         categoryId: newEvent.categoryId,
       };
 
-      const notificationId = await scheduleNotification(eventData);
-      if (notificationId) {
-        eventData.notificationId = notificationId;
-      }
-
       const updatedEvents = { ...events };
       if (!updatedEvents[selectedDate]) {
         updatedEvents[selectedDate] = [];
       }
 
       if (editingEvent) {
-        const eventIndex = updatedEvents[selectedDate].findIndex(
-          e => e.id === editingEvent.id
-        );
-        if (eventIndex !== -1) {
-          updatedEvents[selectedDate][eventIndex] = eventData;
+        const index = updatedEvents[selectedDate].findIndex(e => e.id === editingEvent.id);
+        if (index !== -1) {
+          updatedEvents[selectedDate][index] = eventToSave;
         }
       } else {
-        updatedEvents[selectedDate].push(eventData);
+        updatedEvents[selectedDate].push(eventToSave);
+      }
+
+      const notificationId = await scheduleNotification(eventToSave);
+      if (notificationId) {
+        eventToSave.notificationId = notificationId;
       }
 
       await saveData(updatedEvents);
       setEvents(updatedEvents);
       setModalVisible(false);
       resetForm();
+      setRefreshKey(prev => prev + 1); // Force refresh
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       Alert.alert('Erreur', 'Impossible de sauvegarder l\'événement');
@@ -206,36 +195,42 @@ export default function CalendarScreen() {
   };
 
   const deleteEvent = async (eventId: string) => {
-    Alert.alert(
-      'Confirmation',
-      'Voulez-vous vraiment supprimer cet événement ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const event = events[selectedDate].find(e => e.id === eventId);
-              if (event?.notificationId) {
-                await Notifications.cancelScheduledNotificationAsync(event.notificationId);
-              }
-
-              const updatedEvents = { ...events };
-              updatedEvents[selectedDate] = events[selectedDate].filter(
-                event => event.id !== eventId
-              );
-              await saveData(updatedEvents);
-              setEvents(updatedEvents);
-            } catch (error) {
-              console.error('Erreur lors de la suppression:', error);
-              Alert.alert('Erreur', 'Impossible de supprimer l\'événement');
+  Alert.alert(
+    'Confirmation',
+    'Voulez-vous vraiment supprimer cet événement ?',
+    [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Supprimer',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const event = events[selectedDate].find(e => e.id === eventId);
+            if (event?.notificationId) {
+              await Notifications.cancelScheduledNotificationAsync(event.notificationId);
             }
-          },
+
+            const updatedEvents = { ...events };
+            updatedEvents[selectedDate] = events[selectedDate].filter(
+              event => event.id !== eventId
+            );
+
+            // Si la date n'a plus d'événements, supprimer l'entrée complètement
+            if (updatedEvents[selectedDate].length === 0) {
+              delete updatedEvents[selectedDate];
+            }
+
+            await saveData(updatedEvents);
+            setEvents(updatedEvents);
+          } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            Alert.alert('Erreur', 'Impossible de supprimer l\'événement');
+          }
         },
-      ]
-    );
-  };
+      },
+    ]
+  );
+};
 
   const resetForm = () => {
     setNewEvent({
@@ -249,29 +244,36 @@ export default function CalendarScreen() {
   };
 
   const getMarkedDates = () => {
-    const marked = Object.keys(events).reduce((acc, date) => ({
-    ...acc,
-    [date]: {
-      marked: true,
-      selected: date === selectedDate,
-      selectedColor: date === selectedDate ? '#FF8F66' : undefined,
-      dotColor: '#FFFFFF',
-      customContainerStyle: {
-        backgroundColor: '#FF8F66',
-        borderRadius: 20,
-      },
+    const markedDates: { [key: string]: { marked: boolean; dots?: any[]; selected?: boolean } } = {};
+
+    // Marquer toutes les dates avec des événements
+    Object.keys(events).forEach(date => {
+      if (events[date]?.length > 0) {
+        markedDates[date] = {
+          marked: true,
+          dots: events[date].map(event => ({
+            key: event.id,
+            color: categories.find(c => c.id === event.categoryId)?.color || '#FF8F66',
+          })),
+        };
+      }
+    });
+
+    // Ajouter la sélection pour la date actuelle sans écraser les dots
+    if (selectedDate) {
+      markedDates[selectedDate] = {
+        ...markedDates[selectedDate],
+        selected: true,
+        marked: true,
+        dots: markedDates[selectedDate]?.dots || [{
+          key: 'selected',
+          color: '#FF8F66'
+        }]
+      };
     }
-  }), {});
 
-  if (!marked[selectedDate]) {
-    marked[selectedDate] = {
-      selected: true,
-      selectedColor: '#4247BD',
-    };
-  }
-
-  return marked;
-};
+    return markedDates;
+  };
 
   const renderEvent = (event: Event) => {
     const category = categories.find(c => c.id === event.categoryId);
@@ -348,58 +350,57 @@ export default function CalendarScreen() {
         </View>
       </View>
 
-      <CalendarProvider date={selectedDate} onDateChanged={setSelectedDate}>
-        {viewMode === 'month' ? (
-          <Calendar
-            onDayPress={(day) => setSelectedDate(day.dateString)}
-            markedDates={getMarkedDates()}
-            theme={{
-              selectedDayBackgroundColor: '#FF8F66',
-              todayTextColor: '#FF8F66',
-              arrowColor: '#FF8F66',
-              'stylesheet.calendar.main': {
-                dayContainer: {
-                  borderRadius: 20,
-                },
-              },
+      <Calendar
+        onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
+        markedDates={getMarkedDates()}
+        markingType="multi-dot"
+        theme={{
+          selectedDayBackgroundColor: '#FF8F66',
+          todayTextColor: '#FF8F66',
+          arrowColor: '#FF8F66',
+          dotColor: '#FF8F66',
+          selectedDotColor: '#FFFFFF',
+        }}
+      />
+
+      <View style={styles.eventSection}>
+        <View style={styles.eventHeader}>
+          <Text style={styles.eventHeaderText}>
+            Événements du {new Date(selectedDate).toLocaleDateString('fr-FR', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            })}
+          </Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              resetForm();
+              setModalVisible(true);
             }}
-          />
-        ) : (
-          <ExpandableCalendar
-            onDayPress={(day) => setSelectedDate(day.dateString)}
-            firstDay={1}
-            markedDates={getMarkedDates()}
-          />
-        )}
-
-        <View style={styles.eventSection}>
-          <View style={styles.eventHeader}>
-            <Text style={styles.eventHeaderText}>
-              Événements du {new Date(selectedDate).toLocaleDateString('fr-FR')}
-            </Text>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => {
-                resetForm();
-                setModalVisible(true);
-              }}
-            >
-              <Text style={styles.addButtonText}>+ Ajouter</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.eventList}>
-            {events[selectedDate]?.map(renderEvent)}
-          </ScrollView>
+          >
+            <Text style={styles.addButtonText}>+ Ajouter</Text>
+          </TouchableOpacity>
         </View>
-      </CalendarProvider>
+
+        <ScrollView style={styles.eventList}>
+          {events[selectedDate]?.length > 0 ? (
+            events[selectedDate].map(renderEvent)
+          ) : (
+            <Text style={styles.noEventsText}>Aucun événement pour cette date</Text>
+          )}
+        </ScrollView>
+      </View>
 
       {/* Modal d'ajout/modification d'événement */}
       <Modal
         visible={modalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => {
+          setModalVisible(false);
+          resetForm();
+        }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -608,12 +609,19 @@ const styles = StyleSheet.create({
   eventSection: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#FFFFFF',
   },
-  eventHeaderRow: {
+  eventHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  eventCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   eventHeaderText: {
     fontSize: 16,
@@ -633,11 +641,17 @@ const styles = StyleSheet.create({
   eventList: {
     flex: 1,
   },
+  noEventsText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    marginTop: 20,
+  },
   eventCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    marginBottom: 12,
+    borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -653,17 +667,13 @@ const styles = StyleSheet.create({
   },
   eventInfo: {
     flex: 1,
-  },
-  eventHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+    marginRight: 12,
   },
   eventTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333333',
+    flex: 1,
   },
   categoryTag: {
     paddingHorizontal: 8,
@@ -671,6 +681,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 12,
     color: '#FFFFFF',
+    marginLeft: 8,
   },
   eventTime: {
     fontSize: 14,
