@@ -2,7 +2,18 @@ import React, { useContext } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { View, Platform } from 'react-native';
-import { UserCircle2, MessageSquare, Settings, HelpCircle, LogOut, Home, ScanLine, UsersRound, CalendarDays } from 'lucide-react-native';
+import {
+    UserCircle2,
+    Settings,
+    HelpCircle,
+    LogOut,
+    Home,
+    ScanLine,
+    UsersRound,
+    CalendarDays,
+    UserRound,
+    MessageCircle
+} from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../contexts/AuthContext';
 
@@ -11,16 +22,14 @@ import DashboardScreen from '../screens/DashboardScreen';
 import MyAccountScreen from '../screens/MyAccountScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ScanScreen from '../screens/scanner/ScanScreen';
-import SettingsScreen from './drawer/SettingsScreen';
-import HelpScreen from './drawer/HelpScreen';
-import ContactsScreen from './ContactsScreen';
-import ProfilesScreen from './ProfilesScreen';
-import CalendarScreen from './CalendarScreen';
-
+import SettingsScreen from '../screens/drawer/SettingsScreen';
+import HelpScreen from '../screens/drawer/HelpScreen';
+import ContactsScreen from '../screens/ContactsScreen';
+import ProfilesScreen from '../screens/ProfilesScreen';
+import CalendarScreen from '../screens/CalendarScreen';
 
 // Import des types
-import {  MainTabParamList, DrawerParamList } from '../types/navigation';
-
+import { MainTabParamList, DrawerParamList } from '../types/navigation';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -42,6 +51,7 @@ function TabNavigator() {
                     bottom: 0,
                     left: 0,
                     right: 0,
+                    zIndex: 999,
                     elevation: 8,
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: -2 },
@@ -63,32 +73,42 @@ function TabNavigator() {
                 }}
             />
             <Tab.Screen
-                name="Contacts"
-                component={ContactsScreen}
-                options={{
-                    tabBarLabel: 'Contacts',
-                    tabBarIcon: ({ color, size }) => (
-                        <UsersRound size={size} color={color} strokeWidth={1.5} />
-                    ),
-                }}
-            />
-            <Tab.Screen
-                name="Profiles"
-                component={ProfilesScreen}
-                options={{
-                    tabBarLabel: 'Profils',
-                    tabBarIcon: ({ color, size }) => (
-                        <UserCircle2 size={size} color={color} strokeWidth={1.5} />
-                    ),
-                }}
-            />
-            <Tab.Screen
                 name="Calendar"
                 component={CalendarScreen}
                 options={{
-                    tabBarLabel: 'Calendrier',
+                    tabBarLabel: 'Agenda',
                     tabBarIcon: ({ color, size }) => (
                         <CalendarDays size={size} color={color} strokeWidth={1.5} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Scan"
+                component={ScanScreen}
+                options={{
+                    tabBarLabel: 'Scanner',
+                    tabBarIcon: ({ color, size }) => (
+                        <ScanLine size={size} color={color} strokeWidth={1.5} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Chat"
+                component={ChatScreen}
+                options={{
+                    tabBarLabel: 'Messages',
+                    tabBarIcon: ({ color, size }) => (
+                        <MessageCircle size={size} color={color} strokeWidth={1.5} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="MyAccount"
+                component={MyAccountScreen}
+                options={{
+                    tabBarLabel: 'Mon Compte',
+                    tabBarIcon: ({ color, size }) => (
+                        <UserCircle2 size={size} color={color} strokeWidth={1.5} />
                     ),
                 }}
             />
@@ -116,6 +136,7 @@ function DrawerNavigator() {
         <Drawer.Navigator
             screenOptions={{
                 headerShown: false,
+                drawerPosition: 'left',
                 drawerStyle: {
                     backgroundColor: '#4247BD',
                     width: 280,

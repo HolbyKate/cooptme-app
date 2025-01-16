@@ -9,7 +9,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Menu } from 'lucide-react-native';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { SharedHeader } from '../components/SharedHeader';
+import { useNavigation } from '@react-navigation/native';
 
 type Contact = {
   id: string;
@@ -33,10 +34,6 @@ const contacts: Contact[] = [
 
 export default function ContactsScreen() {
   const navigation = useNavigation();
-
-  const handleMenuPress = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  };
 
   const renderItem = ({ item }: { item: Contact }) => (
     <TouchableOpacity style={styles.contactCard}>
@@ -62,26 +59,29 @@ export default function ContactsScreen() {
     </TouchableOpacity>
   );
 
+  if (contacts.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <SharedHeader title="Contacts" />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Aucun contact trouvé</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-          <Menu color="#FFFFFF" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Contacts</Text>
-        <Image
-          source={require('../../assets/logo_blue.png')}
-          style={styles.logo}
-          resizeMode="contain"
+      <SharedHeader title="Contacts" />
+      <View style={styles.content}>
+        <FlatList
+          data={contacts}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
         />
       </View>
-      <FlatList
-        data={contacts}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-      />
     </SafeAreaView>
   );
 }
@@ -91,38 +91,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#4c51c6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  menuButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
+  content: {
     flex: 1,
   },
-  logo: {
-    width: 100,
-    height: 40,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
   },
   listContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 20,
+    padding: 20,
   },
   contactCard: {
     flexDirection: 'row',

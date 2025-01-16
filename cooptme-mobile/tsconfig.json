@@ -1,23 +1,28 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "esnext",
     "module": "commonjs",
     "lib": [
       "es2017",
-      "esnext.asynciterable"
+      "esnext.asynciterable",
+      "dom"
     ],
-    "skipLibCheck": true,
+    "allowJs": true,
+    "jsx": "react-native",
+    "noEmit": true,
+    "isolatedModules": true,
     "strict": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "outDir": "./dist",
-    "rootDir": ".",
-    "moduleResolution": "node"
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
-  "include": [
-    "scripts/**/*"
-  ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js"
   ],
   "extends": "expo/tsconfig.base"
 }

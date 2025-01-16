@@ -3,22 +3,28 @@ import {
   StyleSheet,
   View,
   Text,
-  Image,
   TouchableOpacity,
   FlatList,
   SafeAreaView,
   RefreshControl,
   ActivityIndicator,
   Alert,
-  Platform,
 } from "react-native";
-import { Menu, Calendar, MapPin, Clock } from "lucide-react-native";
-import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { Calendar, MapPin, Clock } from "lucide-react-native";
+import { useNavigation } from '@react-navigation/native';
 import { EventService, EventDTO } from "../services/events";
 import { Linking } from "react-native";
-import type { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../types/navigation';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MainTabParamList, RootStackParamList } from '../types/navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SharedHeader } from '../components/SharedHeader';
+
+type EventsScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'Events'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 const eventTypeLabels = {
   job_fair: "🎯 Salon Emploi",
@@ -29,51 +35,10 @@ const eventTypeLabels = {
 } as const;
 
 export default function EventsScreen() {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<EventsScreenNavigationProp>();
   const [events, setEvents] = useState<EventDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const handleMenuPress = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  };
-
-  const addToCalendar = async (event: EventDTO) => {
-    try {
-      const eventDate = new Date(event.date);
-      const formattedDate = eventDate.toISOString().split('T')[0];
-      const STORAGE_KEY = 'calendar_events';
-
-      const storedEvents = await AsyncStorage.getItem(STORAGE_KEY);
-      let existingEvents = storedEvents ? JSON.parse(storedEvents) : {};
-
-      let [startHour, endHour] = event.time ? event.time.split('-').map(t => t.trim()) : ['09:00', '10:00'];
-
-      const calendarEvent = {
-        id: `${event.id}_${Date.now()}`,
-        title: event.title,
-        description: event.description,
-        date: formattedDate,
-        startTime: `${formattedDate}T${startHour}:00.000Z`,
-        endTime: `${formattedDate}T${endHour}:00.000Z`,
-        categoryId: '2',
-        notificationId: null
-      };
-
-      if (!existingEvents[formattedDate]) {
-        existingEvents[formattedDate] = [];
-      }
-
-      existingEvents[formattedDate].push(calendarEvent);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(existingEvents));
-
-      navigation.navigate('Calendar');
-      Alert.alert('Succès', 'Événement ajouté au calendrier');
-    } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible d\'ajouter l\'événement au calendrier');
-    }
-  };
 
   const loadEvents = async () => {
     try {
@@ -101,6 +66,67 @@ export default function EventsScreen() {
   useEffect(() => {
     loadEvents();
   }, []);
+
+  const addToCalendar = async (event: EventDTO) => {
+  try {
+    const eventDate = new Date(event.date);
+    const formattedDate = eventDate.toISOString().split('T')[0];
+    const STORAGE_KEY = 'calendar_events';
+
+    const storedEvents = await AsyncStorage.getItem(STORAGE_KEY);
+    let existingEvents = storedEvents ? JSON.parse(storedEvents) : {};
+
+    let [startHour, endHour] = event.time ? event.time.split('-').map(t => t.trim()) : ['09:00', '10:00'];
+
+    const calendarEvent = {
+      id: `${event.id}_${Date.now()}`,
+      title: event.title,
+      description: event.description,
+      date: formattedDate,
+      startTime: `${formattedDate}T${startHour}:00.000Z`,
+      endTime: `${formattedDate}T${endHour}:00.000Z`,
+      categoryId: '2',
+      notificationId: null
+    };
+
+    if (!existingEvents[formattedDate]) {
+      existingEvents[formattedDate] = [];
+    }
+
+    // Check for duplicate events
+    const isDuplicate = existingEvents[formattedDate].some(
+      (existing: any) => existing.id.startsWith(event.id)
+    );
+
+    if (isDuplicate) {
+      Alert.alert(
+        'Attention',
+        'Cet événement existe déjà dans votre calendrier',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    existingEvents[formattedDate].push(calendarEvent);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(existingEvents));
+
+    // Navigate to Calendar tab through the bottom tab navigation
+    navigation.getParent()?.navigate('Calendar', { selectedDate: formattedDate });
+
+    Alert.alert(
+      'Succès',
+      'Événement ajouté au calendrier',
+      [{ text: 'OK' }]
+    );
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout au calendrier:', error);
+    Alert.alert(
+      'Erreur',
+      'Impossible d\'ajouter l\'événement au calendrier. Veuillez réessayer.',
+      [{ text: 'OK' }]
+    );
+  }
+};
 
   const renderEventCard = ({ item }: { item: EventDTO }) => (
     <TouchableOpacity
@@ -165,26 +191,18 @@ export default function EventsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4247BD" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <SharedHeader title="Événements" />
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#4247BD" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-          <Menu color="#FFFFFF" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Événements</Text>
-        <Image
-          source={require("../../assets/logo_blue.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
-
+      <SharedHeader title="Événements" />
       <View style={styles.content}>
         <FlatList
           data={events}
@@ -213,40 +231,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
-    paddingBottom: 15,
-    backgroundColor: '#4c51c6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  menuButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    flex: 1,
-  },
-  logo: {
-    width: 100,
-    height: 40,
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   listContainer: {
-    paddingVertical: 20,
+    padding: 20,
   },
   eventCard: {
     backgroundColor: "#FFFFFF",
@@ -294,7 +288,6 @@ const styles = StyleSheet.create({
   descriptionContainer: {
     marginBottom: 5,
   },
-
   eventDescription: {
     fontSize: 14,
     color: "#666",
@@ -309,16 +302,10 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 8,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   emptyText: {
     fontSize: 16,
     color: "#666",
     textAlign: "center",
-    marginTop: 40,
   },
   addToCalendarButton: {
     position: 'absolute',

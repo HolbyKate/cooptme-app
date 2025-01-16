@@ -13,6 +13,7 @@ import { profileService } from "../services/profileService";
 import { LinkedInProfile } from "../types/linkedinProfile";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import { SharedHeader } from '../components/SharedHeader';
 
 type ProfilesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -51,41 +52,87 @@ export default function ProfilesScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#4247BD" />
-      </SafeAreaView>
-    );
-  }
-
-  if (!loading && profiles.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.emptyText}>Aucun profil trouvé.</Text>
+        <SharedHeader title="Profils" />
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#4247BD" />
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
-        data={profiles}
-        renderItem={renderProfileItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-      />
+      <SharedHeader title="Profils" />
+      <View style={styles.content}>
+        {profiles.length === 0 ? (
+          <View style={styles.centerContent}>
+            <Text style={styles.emptyText}>Aucun profil trouvé.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={profiles}
+            renderItem={renderProfileItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
-  listContainer: { padding: 20 },
-  profileCard: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E8E8E8",
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
   },
-  name: { fontSize: 18, fontWeight: "bold", marginBottom: 4 },
-  title: { fontSize: 16, color: "#666" },
-  company: { fontSize: 14, color: "#999" },
-  emptyText: { textAlign: "center", fontSize: 16, color: "#666", marginTop: 20 },
+  content: {
+    flex: 1,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  listContainer: {
+    padding: 20,
+  },
+  profileCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333333",
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 16,
+    color: "#666666",
+    marginBottom: 2,
+  },
+  company: {
+    fontSize: 14,
+    color: "#999999",
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "#4247BD",
+    textAlign: "center",
+    fontFamily: "Quicksand-Regular",
+    marginHorizontal: 20,
+    lineHeight: 24,
+  },
 });

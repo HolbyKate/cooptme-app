@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,33 +8,30 @@ import {
   TextInput,
   ScrollView,
   SafeAreaView,
-  Platform,
   Alert,
+  Platform,
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
-import { Menu, Edit2, Trash2, Search, Calendar as CalendarIcon, List } from 'lucide-react-native';
-import { useNavigation, DrawerActions, useFocusEffect } from '@react-navigation/native';
+import { Edit2, Trash2, Search, List } from 'lucide-react-native';
+import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import { SharedHeader } from '../components/SharedHeader';
+import { MainTabParamList } from '../types/navigation';
 
-// Configuration des notifications
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Type definitions
+type CalendarScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'Calendar'>;
+type CalendarScreenRouteProp = RouteProp<MainTabParamList, 'Calendar'>;
 
-// Types
-type EventCategory = {
+interface EventCategory {
   id: string;
   name: string;
   color: string;
-};
+}
 
-type Event = {
+interface Event {
   id: string;
   title: string;
   description: string;
@@ -43,10 +40,17 @@ type Event = {
   endTime: string;
   categoryId: string;
   notificationId?: string;
-};
+}
 
-type ViewMode = 'month' | 'week' | 'agenda';
+interface NewEventForm {
+  title: string;
+  description: string;
+  startTime: Date;
+  endTime: Date;
+  categoryId: string;
+}
 
+// Constants
 const DEFAULT_CATEGORIES: EventCategory[] = [
   { id: '1', name: 'Professionnel', color: '#4247BD' },
   { id: '2', name: 'Personnel', color: '#FF8F66' },
@@ -55,11 +59,29 @@ const DEFAULT_CATEGORIES: EventCategory[] = [
 
 const STORAGE_KEY = 'calendar_events';
 
+// Notification configuration
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+const initialEventForm: NewEventForm = {
+  title: '',
+  description: '',
+  startTime: new Date(),
+  endTime: new Date(),
+  categoryId: DEFAULT_CATEGORIES[0].id,
+};
+
 export default function CalendarScreen() {
-  const navigation = useNavigation();
-  const [viewMode, setViewMode] = useState<ViewMode>('month');
-  const [events, setEvents] = useState<{ [key: string]: Event[] }>({});
-  const [categories] = useState<EventCategory[]>(DEFAULT_CATEGORIES);
+  const route = useRoute<CalendarScreenRouteProp>();
+  const navigation = useNavigation<CalendarScreenNavigationProp>();
+
+  // State management
+  const [events, setEvents] = useState<Record<string, Event[]>>({});
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [modalVisible, setModalVisible] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
@@ -67,25 +89,40 @@ export default function CalendarScreen() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [newEvent, setNewEvent] = useState<{
-    title: string;
-    description: string;
-    startTime: Date;
-    endTime: Date;
-    categoryId: string;
-  }>({
-    title: '',
-    description: '',
-    startTime: new Date(),
-    endTime: new Date(),
-    categoryId: DEFAULT_CATEGORIES[0].id,
-  });
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [newEvent, setNewEvent] = useState<NewEventForm>(initialEventForm);
 
+  // Data loading and permissions
   useEffect(() => {
     loadData();
     requestNotificationPermissions();
-  }, [refreshKey]);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const handleDateChange = async () => {
+      const newDate = route.params?.selectedDate;
+      if (!newDate || !isMounted) return;
+
+      try {
+        if (newDate !== selectedDate) {
+          setSelectedDate(newDate);
+        }
+
+        if (isMounted) {
+          navigation.setParams({ selectedDate: undefined });
+        }
+      } catch (error) {
+        console.error('Error handling date change:', error);
+      }
+    };
+
+    handleDateChange();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [route.params?.selectedDate, navigation, selectedDate]);
 
   const requestNotificationPermissions = async () => {
     const { status } = await Notifications.requestPermissionsAsync();
@@ -94,70 +131,73 @@ export default function CalendarScreen() {
     }
   };
 
-  const loadData = async () => {
+  // Data management
+  const loadData = useCallback(async () => {
     try {
       const storedEvents = await AsyncStorage.getItem(STORAGE_KEY);
       if (storedEvents) {
-        const parsedEvents = JSON.parse(storedEvents);
-        console.log('Événements chargés:', parsedEvents);
-        setEvents(parsedEvents);
+        setEvents(JSON.parse(storedEvents));
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
+      Alert.alert('Erreur', 'Impossible de charger les données');
     }
-  };
+  }, []);
 
-  const saveData = async (newEvents: { [key: string]: Event[] }) => {
+  const saveData = async (newEvents: Record<string, Event[]>) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newEvents));
+      setEvents(newEvents);
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
       Alert.alert('Erreur', 'Impossible de sauvegarder les données');
     }
   };
 
-  const scheduleNotification = async (event: Event) => {
-    if (event.notificationId) {
-      await Notifications.cancelScheduledNotificationAsync(event.notificationId);
-    }
+  // Event handlers
+  const handleDeleteEvent = async (eventId: string) => {
+    Alert.alert(
+      'Confirmation',
+      'Voulez-vous vraiment supprimer cet événement ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const event = events[selectedDate]?.find(e => e.id === eventId);
+              if (event?.notificationId) {
+                await Notifications.cancelScheduledNotificationAsync(event.notificationId);
+              }
 
-    const trigger = new Date(event.startTime);
-    trigger.setMinutes(trigger.getMinutes() - 30);
+              const updatedEvents = { ...events };
+              updatedEvents[selectedDate] = events[selectedDate]?.filter(e => e.id !== eventId) ?? [];
 
-    if (trigger > new Date()) {
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Rappel d\'événement',
-          body: `${event.title} commence dans 30 minutes`,
+              if (updatedEvents[selectedDate].length === 0) {
+                delete updatedEvents[selectedDate];
+              }
+
+              await saveData(updatedEvents);
+            } catch (error) {
+              Alert.alert('Erreur', 'Impossible de supprimer l\'événement');
+            }
+          },
         },
-        trigger,
-      });
-      return notificationId;
+      ]
+    );
+  };
+
+  const handleSaveEvent = async () => {
+    if (!newEvent.title.trim()) {
+      Alert.alert('Erreur', 'Le titre est requis');
+      return;
     }
-  };
 
-  const handleSearchSubmit = () => {
-    if (!searchQuery.trim()) return [];
-    const searchResults: Event[] = [];
-    Object.values(events).forEach(dayEvents => {
-      dayEvents.forEach(event => {
-        if (
-          event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          event.description.toLowerCase().includes(searchQuery.toLowerCase())
-        ) {
-          searchResults.push(event);
-        }
-      });
-    });
-    return searchResults;
-  };
-
-  const saveEvent = async () => {
     try {
       const eventToSave: Event = {
         id: editingEvent?.id || `event_${Date.now()}`,
-        title: newEvent.title,
-        description: newEvent.description,
+        title: newEvent.title.trim(),
+        description: newEvent.description.trim(),
         date: selectedDate,
         startTime: newEvent.startTime.toISOString(),
         endTime: newEvent.endTime.toISOString(),
@@ -178,105 +218,47 @@ export default function CalendarScreen() {
         updatedEvents[selectedDate].push(eventToSave);
       }
 
-      const notificationId = await scheduleNotification(eventToSave);
-      if (notificationId) {
-        eventToSave.notificationId = notificationId;
-      }
-
       await saveData(updatedEvents);
-      setEvents(updatedEvents);
       setModalVisible(false);
       resetForm();
-      setRefreshKey(prev => prev + 1); // Force refresh
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
       Alert.alert('Erreur', 'Impossible de sauvegarder l\'événement');
     }
   };
 
-  const deleteEvent = async (eventId: string) => {
-  Alert.alert(
-    'Confirmation',
-    'Voulez-vous vraiment supprimer cet événement ?',
-    [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Supprimer',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const event = events[selectedDate].find(e => e.id === eventId);
-            if (event?.notificationId) {
-              await Notifications.cancelScheduledNotificationAsync(event.notificationId);
-            }
-
-            const updatedEvents = { ...events };
-            updatedEvents[selectedDate] = events[selectedDate].filter(
-              event => event.id !== eventId
-            );
-
-            // Si la date n'a plus d'événements, supprimer l'entrée complètement
-            if (updatedEvents[selectedDate].length === 0) {
-              delete updatedEvents[selectedDate];
-            }
-
-            await saveData(updatedEvents);
-            setEvents(updatedEvents);
-          } catch (error) {
-            console.error('Erreur lors de la suppression:', error);
-            Alert.alert('Erreur', 'Impossible de supprimer l\'événement');
-          }
-        },
-      },
-    ]
-  );
-};
-
   const resetForm = () => {
-    setNewEvent({
-      title: '',
-      description: '',
-      startTime: new Date(),
-      endTime: new Date(),
-      categoryId: DEFAULT_CATEGORIES[0].id,
-    });
+    setNewEvent(initialEventForm);
     setEditingEvent(null);
   };
 
-  const getMarkedDates = () => {
-    const markedDates: { [key: string]: { marked: boolean; dots?: any[]; selected?: boolean } } = {};
+  // Memoized values
+  const markedDates = useMemo(() => {
+    const dates: Record<string, { marked: boolean; selected?: boolean; selectedColor?: string }> = {};
 
-    // Marquer toutes les dates avec des événements
     Object.keys(events).forEach(date => {
       if (events[date]?.length > 0) {
-        markedDates[date] = {
+        dates[date] = {
           marked: true,
-          dots: events[date].map(event => ({
-            key: event.id,
-            color: categories.find(c => c.id === event.categoryId)?.color || '#FF8F66',
-          })),
+          selectedColor: '#FF8F66'
         };
       }
     });
 
-    // Ajouter la sélection pour la date actuelle sans écraser les dots
     if (selectedDate) {
-      markedDates[selectedDate] = {
-        ...markedDates[selectedDate],
+      dates[selectedDate] = {
+        ...dates[selectedDate],
         selected: true,
-        marked: true,
-        dots: markedDates[selectedDate]?.dots || [{
-          key: 'selected',
-          color: '#FF8F66'
-        }]
+        selectedColor: '#FF8F66'
       };
     }
 
-    return markedDates;
-  };
+    return dates;
+  }, [events, selectedDate]);
 
-  const renderEvent = (event: Event) => {
-    const category = categories.find(c => c.id === event.categoryId);
+  // Render methods
+  const renderEvent = useCallback((event: Event) => {
+    const category = DEFAULT_CATEGORIES.find(c => c.id === event.categoryId);
+
     return (
       <View key={event.id} style={[styles.eventCard, { borderLeftColor: category?.color }]}>
         <View style={styles.eventInfo}>
@@ -316,7 +298,7 @@ export default function CalendarScreen() {
             <Edit2 color="#4247BD" size={20} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => deleteEvent(event.id)}
+            onPress={() => handleDeleteEvent(event.id)}
             style={styles.actionButton}
           >
             <Trash2 color="#FF4444" size={20} />
@@ -324,259 +306,262 @@ export default function CalendarScreen() {
         </View>
       </View>
     );
-  };
+  }, []);
+
+  const HeaderRight = useCallback(() => (
+    <View style={styles.headerRight}>
+      <TouchableOpacity
+        onPress={() => setSearchModalVisible(true)}
+        style={styles.headerButton}
+      >
+        <Search color="#FFFFFF" size={24} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.headerButton}
+      >
+        <List color="#FFFFFF" size={24} />
+      </TouchableOpacity>
+    </View>
+  ), []);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
-          <Menu color="#FFFFFF" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Calendrier</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => setSearchModalVisible(true)} style={styles.headerButton}>
-            <Search color="#FFFFFF" size={24} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setViewMode(viewMode === 'month' ? 'week' : 'month')}
-            style={styles.headerButton}
-          >
-            {viewMode === 'month' ? (
-              <List color="#FFFFFF" size={24} />
-            ) : (
-              <CalendarIcon color="#FFFFFF" size={24} />
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <Calendar
-        onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
-        markedDates={getMarkedDates()}
-        markingType="multi-dot"
-        theme={{
-          selectedDayBackgroundColor: '#FF8F66',
-          todayTextColor: '#FF8F66',
-          arrowColor: '#FF8F66',
-          dotColor: '#FF8F66',
-          selectedDotColor: '#FFFFFF',
-        }}
+      <SharedHeader
+        title="Calendrier"
+        rightContent={<HeaderRight />}
       />
+      <View style={styles.content}>
+        <Calendar
+          onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
+          markedDates={markedDates}
+          theme={{
+            selectedDayBackgroundColor: '#4247BD',
+            todayTextColor: '#FF8F66',
+            arrowColor: '#4247BD',
+          }}
+        />
 
-      <View style={styles.eventSection}>
-        <View style={styles.eventHeader}>
-          <Text style={styles.eventHeaderText}>
-            Événements du {new Date(selectedDate).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric'
-            })}
-          </Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              resetForm();
-              setModalVisible(true);
-            }}
-          >
-            <Text style={styles.addButtonText}>+ Ajouter</Text>
-          </TouchableOpacity>
+        <View style={styles.eventSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              {new Date(selectedDate).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              })}
+            </Text>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                resetForm();
+                setModalVisible(true);
+              }}
+            >
+              <Text style={styles.addButtonText}>+ Ajouter</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.eventList}>
+            {events[selectedDate]?.length > 0 ? (
+              events[selectedDate].map(renderEvent)
+            ) : (
+              <Text style={styles.noEventsText}>Aucun événement pour cette date</Text>
+            )}
+          </ScrollView>
         </View>
 
-        <ScrollView style={styles.eventList}>
-          {events[selectedDate]?.length > 0 ? (
-            events[selectedDate].map(renderEvent)
-          ) : (
-            <Text style={styles.noEventsText}>Aucun événement pour cette date</Text>
-          )}
-        </ScrollView>
-      </View>
+        {/* Event Modal */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => {
+            setModalVisible(false);
+            resetForm();
+          }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>
+                {editingEvent ? "Modifier l'événement" : "Nouvel événement"}
+              </Text>
 
-      {/* Modal d'ajout/modification d'événement */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => {
-          setModalVisible(false);
-          resetForm();
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {editingEvent ? 'Modifier l\'événement' : 'Nouvel événement'}
-            </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Titre"
+                value={newEvent.title}
+                onChangeText={(text) => setNewEvent({ ...newEvent, title: text })}
+              />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Titre"
-              value={newEvent.title}
-              onChangeText={(text) => setNewEvent({ ...newEvent, title: text })}
-            />
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Description"
+                multiline
+                numberOfLines={4}
+                value={newEvent.description}
+                onChangeText={(text) => setNewEvent({ ...newEvent, description: text })}
+              />
 
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Description"
-              multiline
-              numberOfLines={4}
-              value={newEvent.description}
-              onChangeText={(text) => setNewEvent({ ...newEvent, description: text })}
-            />
-
-            <View style={styles.categorySelector}>
-              <Text style={styles.labelText}>Catégorie:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryButton,
-                      {
-                        backgroundColor:
-                          category.id === newEvent.categoryId
-                            ? category.color
-                            : 'transparent',
-                        borderColor: category.color,
-                      },
-                    ]}
-                    onPress={() => setNewEvent({ ...newEvent, categoryId: category.id })}
-                  >
-                    <Text
+              <View style={styles.categorySelector}>
+                <Text style={styles.labelText}>Catégorie:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {DEFAULT_CATEGORIES.map((category) => (
+                    <TouchableOpacity
+                      key={category.id}
                       style={[
-                        styles.categoryButtonText,
+                        styles.categoryButton,
                         {
-                          color:
+                          backgroundColor:
                             category.id === newEvent.categoryId
-                              ? '#FFFFFF'
-                              : category.color,
+                              ? category.color
+                              : 'transparent',
+                          borderColor: category.color,
                         },
                       ]}
+                      onPress={() => setNewEvent({ ...newEvent, categoryId: category.id })}
                     >
-                      {category.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+                      <Text
+                        style={[
+                          styles.categoryButtonText,
+                          {
+                            color:
+                              category.id === newEvent.categoryId
+                                ? '#FFFFFF'
+                                : category.color,
+                          },
+                        ]}
+                      >
+                        {category.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
 
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={() => setShowStartTimePicker(true)}
-            >
-              <Text style={styles.timeButtonText}>
-                Heure de début: {newEvent.startTime.toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={() => setShowStartTimePicker(true)}
+              >
+                <Text style={styles.timeButtonText}>
+                  Heure de début: {newEvent.startTime.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={() => setShowEndTimePicker(true)}
-            >
-              <Text style={styles.timeButtonText}>
-                Heure de fin: {newEvent.endTime.toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={() => setShowEndTimePicker(true)}
+              >
+                <Text style={styles.timeButtonText}>
+                  Heure de fin: {newEvent.endTime.toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </TouchableOpacity>
 
-            {(showStartTimePicker || showEndTimePicker) && (
-              <DateTimePicker
-                value={showStartTimePicker ? newEvent.startTime : newEvent.endTime}
-                mode="time"
-                is24Hour={true}
-                display="default"
-                onChange={(event, selectedDate) => {
-                  if (event.type === 'set' && selectedDate) {
-                    if (showStartTimePicker) {
-                      setNewEvent({ ...newEvent, startTime: selectedDate });
-                      setShowStartTimePicker(false);
-                    } else {
-                      setNewEvent({ ...newEvent, endTime: selectedDate });
-                      setShowEndTimePicker(false);
+              {(showStartTimePicker || showEndTimePicker) && (
+                <DateTimePicker
+                  value={showStartTimePicker ? newEvent.startTime : newEvent.endTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    if (event.type === 'set' && selectedDate) {
+                      if (showStartTimePicker) {
+                        setNewEvent({ ...newEvent, startTime: selectedDate });
+                        setShowStartTimePicker(false);
+                      } else {
+                        setNewEvent({ ...newEvent, endTime: selectedDate });
+                        setShowEndTimePicker(false);
+                      }
                     }
-                  }
-                  setShowStartTimePicker(false);
-                  setShowEndTimePicker(false);
-                }}
-              />
-            )}
+                    setShowStartTimePicker(false);
+                    setShowEndTimePicker(false);
+                  }}
+                />
+              )}
 
-            <View style={styles.modalButtons}>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setModalVisible(false);
+                    resetForm();
+                  }}
+                >
+                  <Text style={styles.buttonText}>Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton]}
+                  onPress={handleSaveEvent}
+                >
+                  <Text style={[styles.buttonText, styles.saveButtonText]}>
+                    {editingEvent ? 'Modifier' : 'Créer'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={searchModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setSearchModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Rechercher</Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Rechercher un événement..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+
+              <ScrollView style={styles.searchResults}>
+                {searchQuery.length > 0 && Object.entries(events).map(([date, dayEvents]) =>
+                  dayEvents.filter(event =>
+                    event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    event.description.toLowerCase().includes(searchQuery.toLowerCase())
+                  ).map(event => (
+                    <TouchableOpacity
+                      key={event.id}
+                      style={styles.searchResultItem}
+                      onPress={() => {
+                        setSelectedDate(date);
+                        setSearchModalVisible(false);
+                        setSearchQuery('');
+                      }}
+                    >
+                      <Text style={styles.searchResultTitle}>{event.title}</Text>
+                      <Text style={styles.searchResultDate}>
+                        {new Date(date).toLocaleDateString('fr-FR')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
-                  setModalVisible(false);
-                  resetForm();
+                  setSearchModalVisible(false);
+                  setSearchQuery('');
                 }}
               >
-                <Text style={styles.buttonText}>Annuler</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={saveEvent}
-              >
-                <Text style={styles.buttonText}>Enregistrer</Text>
+                <Text style={styles.buttonText}>Fermer</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
-
-      {/* Modal de recherche */}
-      <Modal
-        visible={searchModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setSearchModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rechercher</Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Rechercher un événement..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoFocus
-            />
-
-            <ScrollView style={styles.searchResults}>
-              {searchQuery.length > 0 && handleSearchSubmit().map((event) => (
-                <TouchableOpacity
-                  key={event.id}
-                  style={styles.searchResultItem}
-                  onPress={() => {
-                    setSelectedDate(event.date);
-                    setSearchModalVisible(false);
-                    setSearchQuery('');
-                  }}
-                >
-                  <Text style={styles.searchResultTitle}>{event.title}</Text>
-                  <Text style={styles.searchResultDate}>
-                    {new Date(event.date).toLocaleDateString('fr-FR')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => {
-                setSearchModalVisible(false);
-                setSearchQuery('');
-              }}
-            >
-              <Text style={styles.buttonText}>Fermer</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        </Modal>
+      </View>
     </SafeAreaView>
   );
 }
@@ -586,18 +571,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#4247BD',
-    padding: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  content: {
+    flex: 1,
   },
   headerRight: {
     flexDirection: 'row',
@@ -605,25 +580,19 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     marginLeft: 16,
+    padding: 4,
   },
   eventSection: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#FFFFFF',
   },
-  eventHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  eventCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  eventHeaderText: {
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#4247BD',
@@ -640,12 +609,6 @@ const styles = StyleSheet.create({
   },
   eventList: {
     flex: 1,
-  },
-  noEventsText: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    marginTop: 20,
   },
   eventCard: {
     backgroundColor: '#FFFFFF',
@@ -669,6 +632,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   eventTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -686,11 +654,12 @@ const styles = StyleSheet.create({
   eventTime: {
     fontSize: 14,
     color: '#666666',
-    marginBottom: 4,
+    marginTop: 4,
   },
   eventDescription: {
     fontSize: 14,
     color: '#666666',
+    marginTop: 4,
   },
   eventActions: {
     flexDirection: 'row',
@@ -698,6 +667,12 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 8,
     marginLeft: 8,
+  },
+  noEventsText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    marginTop: 20,
   },
   modalContainer: {
     flex: 1,
@@ -719,7 +694,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#DDDDDD',
+    borderColor: '#E5E7EB',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -750,7 +725,7 @@ const styles = StyleSheet.create({
   },
   timeButton: {
     borderWidth: 1,
-    borderColor: '#DDDDDD',
+    borderColor: '#E5E7EB',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -771,15 +746,18 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   cancelButton: {
-    backgroundColor: '#DDDDDD',
+    backgroundColor: '#E5E7EB',
   },
   saveButton: {
     backgroundColor: '#4247BD',
   },
   buttonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+    color: '#666666',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
   },
   searchResults: {
     maxHeight: 300,
@@ -788,7 +766,7 @@ const styles = StyleSheet.create({
   searchResultItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#DDDDDD',
+    borderBottomColor: '#E5E7EB',
   },
   searchResultTitle: {
     fontSize: 16,

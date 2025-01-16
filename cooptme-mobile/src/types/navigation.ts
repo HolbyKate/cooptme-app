@@ -1,19 +1,21 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-// Types pour le Tab Navigator principal
 export type MainTabParamList = {
     Dashboard: undefined;
     Events: undefined;
     JobList: undefined;
-    Calendar: undefined;
+    Calendar: { selectedDate?: string };
     Chat: undefined;
-    Profiles: undefined;
+    Profiles: { userId?: string };
     Contacts: undefined;
     Scan: undefined;
     MyAccount: undefined;
 };
 
-// Types pour le Drawer
 export type DrawerParamList = {
     MainTabs: NavigatorScreenParams<MainTabParamList>;
     Settings: undefined;
@@ -22,20 +24,25 @@ export type DrawerParamList = {
     MyAccount: undefined;
 };
 
-// Types pour le Root Stack
 export type RootStackParamList = {
+    Home: undefined;
+    Login: undefined;
     MainApp: NavigatorScreenParams<DrawerParamList>;
-    Dashboard: undefined;
-    Events: undefined;
-    JobList: undefined;
-    Calendar: undefined;
-    Chat: undefined;
-    Profiles: undefined;
+    MyAccount: undefined;
     Contacts: undefined;
+    Profiles: { userId?: string };
+    Events: undefined;
+    Calendar: { selectedDate?: string };
+    JobList: undefined;
     Scan: undefined;
     ProfileDetail: { profileId: string };
     ChatConversation: { chatId: string; name: string };
-    Home: undefined;
-    Login: undefined;
-    MyAccount: undefined;
 };
+
+export type DashboardScreenNavigationProp = CompositeNavigationProp<
+    BottomTabNavigationProp<MainTabParamList>,
+    CompositeNavigationProp<
+        DrawerNavigationProp<DrawerParamList>,
+        NativeStackNavigationProp<RootStackParamList>
+    >
+>;

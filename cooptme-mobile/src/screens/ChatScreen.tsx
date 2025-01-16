@@ -9,10 +9,14 @@ import {
   SafeAreaView,
   TextInput,
 } from "react-native";
-import { Menu, Search } from "lucide-react-native";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { Search } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from 'expo-linear-gradient';
+import { SharedHeader } from '../components/SharedHeader';
+import { RootStackParamList } from '../types/navigation';
+
+type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 type ChatListItem = {
   id: string;
@@ -46,12 +50,12 @@ const chatList: ChatListItem[] = [
 ];
 
 export default function ChatScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const navigation = useNavigation<ChatScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleMenuPress = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  };
+  const filteredChats = chatList.filter((chat) =>
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const renderChatItem = ({ item }: { item: ChatListItem }) => (
     <TouchableOpacity
@@ -100,18 +104,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-          <Menu color="#FFFFFF" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Messages</Text>
-        <Image
-          source={require("../../assets/logo_blue.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
-
+      <SharedHeader title="Messages" />
       <View style={styles.content}>
         <View style={styles.searchContainer}>
           <Search color="#666" size={20} style={styles.searchIcon} />
@@ -124,15 +117,19 @@ export default function ChatScreen() {
           />
         </View>
 
-        <FlatList
-          data={chatList.filter((chat) =>
-            chat.name.toLowerCase().includes(searchQuery.toLowerCase())
-          )}
-          renderItem={renderChatItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.chatList}
-          showsVerticalScrollIndicator={false}
-        />
+        {filteredChats.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Aucune conversation trouvée</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredChats}
+            renderItem={renderChatItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.chatList}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
       <LinearGradient
         colors={['transparent', '#FF8F66']}
@@ -149,33 +146,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#4c51c6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  menuButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
+  content: {
     flex: 1,
-  },
-  logo: {
-    width: 100,
-    height: 40,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   searchContainer: {
     flexDirection: "row",
@@ -190,13 +164,22 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: "Quicksand-Regular",
     fontSize: 16,
     color: "#333",
     paddingVertical: 12,
   },
   chatList: {
     paddingBottom: 20,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
   },
   chatItem: {
     flexDirection: "row",
@@ -221,9 +204,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   avatarText: {
-    fontFamily: "Quicksand-Bold",
     fontSize: 18,
     color: "#4247BD",
+    fontWeight: 'bold',
   },
   onlineIndicator: {
     position: "absolute",
@@ -247,12 +230,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   chatName: {
-    fontFamily: "Quicksand-Bold",
     fontSize: 16,
+    fontWeight: 'bold',
     color: "#333",
   },
   timestamp: {
-    fontFamily: "Quicksand-Regular",
     fontSize: 12,
     color: "#666",
   },
@@ -263,7 +245,6 @@ const styles = StyleSheet.create({
   },
   lastMessage: {
     flex: 1,
-    fontFamily: "Quicksand-Regular",
     fontSize: 14,
     color: "#666",
   },
@@ -278,14 +259,9 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   unreadCount: {
-    fontFamily: "Quicksand-Bold",
     fontSize: 12,
     color: "#FFFFFF",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    fontWeight: 'bold',
   },
   gradient: {
     position: 'absolute',

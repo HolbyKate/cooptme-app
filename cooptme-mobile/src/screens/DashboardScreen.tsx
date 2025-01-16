@@ -1,98 +1,91 @@
+// DashboardScreen.tsx
 import React, { useRef, useEffect } from 'react';
 import {
-  StyleSheet,
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
-  Platform,
-  Image,
   Animated,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import {
   Bell,
   Menu,
   UsersRound,
-  UserCircle2,
-  PartyPopper,
-  MessageCircle,
+  UserRound,
   ScanLine,
+  PartyPopper,
   Briefcase,
+  MessageCircle,
   CalendarDays,
 } from 'lucide-react-native';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { CompositeNavigationProp } from '@react-navigation/native';
+import { useNavigation, DrawerActions, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, MainTabParamList, DrawerParamList } from '../types/navigation';
-import { Video } from 'expo-av';
-import { NavigatorScreenParams } from '@react-navigation/native';
+import {
+  DashboardScreenNavigationProp,
+  DrawerParamList,
+  MainTabParamList,
+  RootStackParamList
+} from '../types/navigation';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 
-type DashboardScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
-  NativeStackNavigationProp<RootStackParamList>
->;
 
-type NavigationScreens = keyof MainTabParamList | keyof RootStackParamList;
-
-type CardItem = {
+interface NavigationDestination {
   id: number;
   title: string;
-  screen: NavigationScreens;
+  screen: keyof MainTabParamList;
   icon: React.FC<any>;
-    userId?: string;
-    chatId?: string;
-    name?: string;
-    profileId?: string;
-};
+}
 
-const cardItems: CardItem[] = [
+
+const cardItems: NavigationDestination[] = [
   {
     id: 1,
-    title: 'Contacts',
-    screen: 'Contacts',
-    icon: (props) => <UsersRound {...props} strokeWidth={1.5} />,
+    title: "Contacts",
+    screen: "Contacts",
+    icon: UsersRound,
   },
   {
     id: 2,
-    title: 'Profils',
-    screen: 'Profiles',
-    icon: (props) => <UserCircle2 {...props} strokeWidth={1.5} />,
+    title: "Profils",
+    screen: "Profiles",
+    icon: UserRound,
   },
   {
     id: 3,
-    title: 'Événements',
-    screen: 'Events',
-    icon: (props) => <PartyPopper {...props} strokeWidth={1.5} />,
+    title: "Événements",
+    screen: "Events",
+    icon: PartyPopper,
   },
   {
     id: 4,
-    title: 'Calendrier',
-    screen: 'Calendar',
-    icon: (props) => <CalendarDays {...props} strokeWidth={1.5} />,
+    title: "Calendrier",
+    screen: "Calendar",
+    icon: CalendarDays,
   },
   {
     id: 5,
-    title: 'Messages',
-    screen: 'Chat',
-    icon: (props) => <MessageCircle {...props} strokeWidth={1.5} />,
+    title: "Emplois",
+    screen: "JobList",
+    icon: Briefcase,
   },
   {
     id: 6,
-    title: 'Emplois',
-    screen: 'JobList',
-    icon: (props) => <Briefcase {...props} strokeWidth={1.5} />,
+    title: "Chat",
+    screen: "Chat",
+    icon: MessageCircle,
   },
   {
     id: 7,
-    title: 'Scanner',
-    screen: 'Scan',
-    icon: (props) => <ScanLine {...props} strokeWidth={1.5} />,
+    title: "Scanner",
+    screen: "Scan",
+    icon: ScanLine,
   }
 ];
+
 
 export default function DashboardScreen(): JSX.Element {
   const navigation = useNavigation<DashboardScreenNavigationProp>();
@@ -116,75 +109,45 @@ export default function DashboardScreen(): JSX.Element {
     ).start();
   }, []);
 
-  const handleMenuPress = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  };
-
-  const handleNavigation = (screen: NavigationScreens, params?: object) => {
+  const handleNavigation = (destination: NavigationDestination) => {
     try {
-      switch (screen) {
-        case 'Calendar':
-          navigation.navigate('MainApp', {
-            screen: 'MainTabs',
-            params: {
-              screen: 'Calendar'
-            }
-          });
-          break;
-
+      switch (destination.screen) {
         case 'Profiles':
-          navigation.navigate('MainApp', {
-            screen: 'MainTabs',
-            params: {
-              screen: 'Profiles'
-            }
-          });
+          navigation.navigate('Profiles', { userId: undefined });
           break;
-
-        case 'Contacts':
-        case 'Chat':
-        case 'Scan':
-          navigation.navigate('MainApp', {
-            screen: 'MainTabs',
-            params: {
-              screen
-            }
-          });
+        case 'Calendar':
+          navigation.navigate('Calendar', { selectedDate: undefined });
           break;
-
-        case 'Events':
-        case 'JobList':
-          navigation.navigate(screen);
-          break;
-
         default:
-          console.warn(`Route non gérée: ${screen}`);
+          navigation.navigate(destination.screen);
       }
     } catch (error) {
-      console.error(`Erreur de navigation vers ${screen}:`, error);
+      console.error(`Erreur de navigation vers ${destination.screen}:`, error);
+      Alert.alert(
+        'Erreur de Navigation',
+        'Impossible d\'accéder à cette section pour le moment.'
+      );
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#4247BD', '#4c51c6']}
-        style={styles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-      >
-        <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-          <Menu color="#FFFFFF" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Dashboard</Text>
-        <Image
-          source={require('../../assets/logo_blue.png') || {}}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </LinearGradient>
 
-      <ScrollView style={styles.content}>
+  const rightContent = (
+    <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
+      <Menu color="#FFFFFF" size={24} />
+    </TouchableOpacity>
+  );
+
+  return (
+    <ScreenWrapper
+      headerProps={{
+        title: "Dashboard",
+        rightContent: rightContent
+      }}
+    >
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Text style={styles.welcomeText}>Bonjour {userName},</Text>
 
         <View style={styles.notificationBar}>
@@ -206,7 +169,7 @@ export default function DashboardScreen(): JSX.Element {
             <TouchableOpacity
               key={item.id}
               style={styles.menuItem}
-              onPress={() => handleNavigation(item.screen)}
+              onPress={() => handleNavigation(item)}
             >
               <View style={styles.iconContainer}>
                 <item.icon color="#4247BD" size={32} />
@@ -216,45 +179,17 @@ export default function DashboardScreen(): JSX.Element {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fef9f9',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
-    paddingBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  menuButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    flex: 1,
-  },
-  logo: {
-    width: 100,
-    height: 40,
-  },
   content: {
     flex: 1,
     padding: 20,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   welcomeText: {
     fontSize: 24,

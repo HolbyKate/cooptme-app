@@ -15,6 +15,7 @@ import QRCode from 'react-native-qrcode-svg';
 import * as Linking from 'expo-linking';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SharedHeader } from '../components/SharedHeader';
 
 const windowWidth = Dimensions.get('window').width;
 
