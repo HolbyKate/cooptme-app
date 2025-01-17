@@ -57,6 +57,7 @@ export default function ScanScreen({ navigation }: Props) {
         photoId: null,
         gender: 'unknown' as Gender
       };
+      
       await profileService.saveProfile(completeProfile);
       Alert.alert(
         "Succès",
@@ -75,8 +76,12 @@ export default function ScanScreen({ navigation }: Props) {
           }
         ]
       );
-    } catch (error) {
-      Alert.alert("Erreur", "Impossible d'enregistrer le profil.");
+    } catch (error: any) {
+      console.error('Erreur lors de la sauvegarde du profil:', error);
+      Alert.alert(
+        "Erreur",
+        error.message || "Impossible d'enregistrer le profil. Veuillez réessayer."
+      );
       qrLock.current = false;
     }
   };
@@ -85,7 +90,7 @@ export default function ScanScreen({ navigation }: Props) {
     console.log("QR Code détecté :", { type, data });
     if (data && !qrLock.current) {
       qrLock.current = true;
-      if (data.includes("")) {
+      if (data.includes("linkedin.com/in/")) {
         setProfileUrl(data);
         setLinkedInBrowserVisible(true);
       } else {

@@ -1,9 +1,14 @@
 import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthResponse } from '../types';
+import { Platform } from 'react-native';
 
 const CONFIG = {
-  API_URL: 'http://10.0.2.2:3000/api',
+  API_URL: __DEV__
+    ? Platform.OS === 'android'
+      ? 'http://10.0.2.2:3000/api'  // Pour l'émulateur Android
+      : 'http://localhost:3000/api'  // Pour iOS
+    : 'https://votre-api-production.com/api',
   API_TIMEOUT: 30000,
   AUTH_ENDPOINTS: {
     LOGIN: '/auth/login',
@@ -24,6 +29,7 @@ export const apiClient = axios.create({
   baseURL: CONFIG.API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
   timeout: CONFIG.API_TIMEOUT,
 });
@@ -45,19 +51,29 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   response => response,
   error => {
-    console.error('Erreur API interceptée:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      data: error.response?.data,
+    console.error('Erreur API détaillée:', {
       message: error.message,
-      isAxiosError: error.isAxiosError
+      code: error.code,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL,
+        headers: error.config?.headers,
+      },
+      response: {
+        status: error.response?.status,
+        data: error.response?.data,
+      }
     });
-    
+
     if (error.message === 'Network Error') {
-      throw new Error('Erreur de connexion au serveur. Vérifiez que le serveur est démarré et accessible.');
+      throw new Error(
+        'Impossible de se connecter au serveur. ' +
+        'Vérifiez votre connexion internet et que le serveur est bien démarré. ' +
+        'URL: ' + error.config?.url
+      );
     }
-    
+
     return Promise.reject(error);
   }
 );

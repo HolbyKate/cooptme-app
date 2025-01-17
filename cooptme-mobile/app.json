@@ -80,6 +80,11 @@
         }
       ]
     ],
-    "scheme": "exp"
+    "scheme": "exp",
+    "extra": {
+      "eas": {
+        "projectId": "cooptme-mobile"
+      }
+    }
   }
 }

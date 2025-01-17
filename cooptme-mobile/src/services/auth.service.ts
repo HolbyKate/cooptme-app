@@ -20,7 +20,10 @@ class AuthService {
 
   async register(data: { email: string; password: string; name: string }): Promise<AuthResponse> {
     try {
-      console.log('Tentative d\'inscription vers:', `${CONFIG.API_URL}${CONFIG.AUTH_ENDPOINTS.REGISTER}`);
+      console.log('Tentative d\'inscription avec:', {
+        url: `${CONFIG.API_URL}${CONFIG.AUTH_ENDPOINTS.REGISTER}`,
+        data: { ...data, password: '***' }
+      });
 
       const response = await apiClient.post(CONFIG.AUTH_ENDPOINTS.REGISTER, data, {
         timeout: 10000,
@@ -30,14 +33,9 @@ class AuthService {
         }
       });
 
-      console.log('Réponse brute du serveur:', response);
-
-      if (!response.data) {
-        throw new Error('Réponse invalide du serveur');
-      }
-
       if (response.data.token) {
         await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.USER_TOKEN, response.data.token);
+        await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(response.data.user));
       }
 
       return response.data;
@@ -46,17 +44,21 @@ class AuthService {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-        config: error.config,
         isAxiosError: error.isAxiosError,
-        stack: error.stack
       });
 
-      if (error.message === 'Network Error') {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet et que le serveur est démarré.');
+      if (error.message.includes('Network Error')) {
+        throw new Error(
+          'Impossible de se connecter au serveur. ' +
+          'Vérifiez que:\n' +
+          '1. Votre appareil est connecté à Internet\n' +
+          '2. Le serveur backend est démarré\n' +
+          '3. L\'URL du serveur est correcte'
+        );
       }
 
       throw new Error(
-        error.response?.data?.message ||
+        error.response?.data?.error ||
         error.message ||
         'Erreur lors de l\'inscription'
       );

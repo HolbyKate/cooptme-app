@@ -23,7 +23,7 @@ export default function TestScreen() {
         gender: Math.random() > 0.5 ? 'male' : 'female'
       };
 
-      await profileService.syncLinkedInProfile(testProfile);
+      await profileService.syncProfile(testProfile);
       console.log('Profil test ajouté avec succès');
 
       // Recharger les profils

@@ -1,4 +1,4 @@
-export type JobOffer = {
+export interface JobOffer {
     id: string;
     title: string;
     company: string;
@@ -8,9 +8,9 @@ export type JobOffer = {
     salary?: string;
     postedDate: string;
     url?: string;
-};
+}
 
-export type JobApiResponse = {
-    data: JobOffer[];
-    message?: string;
-};
+export interface JobSearchParams {
+    term?: string;
+    location?: string;
+}

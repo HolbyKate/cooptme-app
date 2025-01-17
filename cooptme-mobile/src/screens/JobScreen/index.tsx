@@ -24,49 +24,13 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { styles } from './styles';
+import { jobService } from '../../services/job.service';
+import type { JobOffer } from '../../services/api';
 
-// Type pour les offres d'emploi
-type JobOfferType = {
-    id: string;
-    title: string;
-    company: string;
-    location: string;
-    description: string;
-    contractType: string;
-    salary?: string;
-    postedDate: string;
-    url?: string;
-};
-
-// Service pour gérer les appels API
-const JobService = {
-    async fetchJobs(searchParams?: { term?: string; location?: string }) {
-        const queryParams = new URLSearchParams();
-        if (searchParams?.term) queryParams.append('term', searchParams.term);
-        if (searchParams?.location) queryParams.append('location', searchParams.location);
-
-        const response = await fetch(`/api/jobs?${queryParams}`);
-        if (!response.ok) throw new Error('Failed to fetch jobs');
-        return response.json();
-    },
-
-    async uploadJobsCSV(file: File) {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/api/jobs/upload', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) throw new Error('Failed to upload CSV');
-        return response.json();
-    }
-};
 
 export default function JobListScreen() {
     const navigation = useNavigation();
-    const [jobs, setJobs] = useState<JobOfferType[]>([]);
+    const [jobs, setJobs] = useState<JobOffer[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [location, setLocation] = useState('');
     const [loading, setLoading] = useState(true);
@@ -75,12 +39,11 @@ export default function JobListScreen() {
     const [error, setError] = useState<string | null>(null);
     const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
-    // Charger les offres d'emploi
     const loadJobs = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            const fetchedJobs = await JobService.fetchJobs();
+            const fetchedJobs = await jobService.fetchJobs();
             setJobs(fetchedJobs);
         } catch (e) {
             setError('Impossible de charger les offres. Veuillez réessayer.');
@@ -90,7 +53,6 @@ export default function JobListScreen() {
         }
     }, []);
 
-    // Gérer l'upload de fichier CSV
     const handleFileUpload = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
@@ -99,14 +61,17 @@ export default function JobListScreen() {
             });
 
             if (result.assets && result.assets[0]) {
-                const { uri, name } = result.assets[0];
                 setUploading(true);
+                const { uri, name, mimeType } = result.assets[0];
 
-                const response = await fetch(uri);
-                const blob = await response.blob();
-                const file = new File([blob], name, { type: 'text/csv' });
+                const formData = new FormData();
+                formData.append('file', {
+                    uri,
+                    name,
+                    type: mimeType,
+                } as any);
 
-                await JobService.uploadJobsCSV(file);
+                await jobService.uploadJobsCSV(formData);
                 Alert.alert('Succès', 'Les offres ont été importées avec succès');
                 loadJobs();
             }
@@ -117,12 +82,11 @@ export default function JobListScreen() {
         }
     };
 
-    // Recherche des offres
     const searchJobs = async () => {
         try {
             setLoading(true);
             setError(null);
-            const searchResults = await JobService.fetchJobs({
+            const searchResults = await jobService.fetchJobs({
                 term: searchTerm,
                 location: location,
             });
@@ -135,13 +99,11 @@ export default function JobListScreen() {
         }
     };
 
-    // Rafraîchir la liste
-    const onRefresh = React.useCallback(() => {
+    const onRefresh = useCallback(() => {
         setRefreshing(true);
         loadJobs().finally(() => setRefreshing(false));
     }, [loadJobs]);
 
-    // Ouvrir l'URL de l'offre
     const handleOpenJob = async (url: string) => {
         try {
             const supported = await Linking.canOpenURL(url);
@@ -156,7 +118,7 @@ export default function JobListScreen() {
     };
 
     // Composant pour afficher une offre
-    const JobCard = ({ job }: { job: JobOfferType }) => (
+    const JobCard = ({ job }: { job: JobOffer }) => (
         <TouchableOpacity
             style={[
                 styles.card,

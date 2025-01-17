@@ -139,13 +139,18 @@ export const generateContacts = (number: number): Contact[] => {
 
 // Trie les contacts par catégorie
 export const sortContactsByCategory = (contacts: Contact[]): Record<CategoryTitle, Contact[]> => {
-  return contacts.reduce((acc, contact) => {
-    if (!acc[contact.category]) {
-      acc[contact.category] = [];
-    }
-    acc[contact.category].push(contact);
+  // Initialiser toutes les catégories avec des tableaux vides
+  const initialCategories = categories.reduce((acc, category) => {
+    acc[category.title] = [];
     return acc;
   }, {} as Record<CategoryTitle, Contact[]>);
+
+  // Trier les contacts dans leurs catégories respectives
+  return contacts.reduce((acc, contact) => {
+    const category = (contact.category as CategoryTitle) || 'Other';
+    acc[category].push(contact);
+    return acc;
+  }, initialCategories);
 };
 
 // Filtre les contacts par poste

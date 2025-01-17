@@ -1,6 +1,6 @@
 import NetInfo from "@react-native-community/netinfo";
 import { profileService } from "../services/profileService";
-import { getProfiles } from "./linkedinScraper";
+import { getProfiles, LinkedInProfile } from "./linkedinScraper";
 
 export const syncManager = {
   async syncProfiles(): Promise<void> {
@@ -22,3 +22,12 @@ export const syncManager = {
     setInterval(this.syncProfiles, intervalMinutes * 60 * 1000);
   },
 };
+
+function isLinkedInProfile(profile: any): profile is LinkedInProfile {
+    return (
+        profile &&
+        typeof profile === 'object' &&
+        // Ajouter ici les vérifications nécessaires pour les propriétés de LinkedInProfile
+        true
+    );
+}

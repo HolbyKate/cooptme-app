@@ -57,19 +57,19 @@ export default function ProfileDetailScreen() {
   }
 
   if (error || !profile) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeft color="#4247BD" size={24} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error || "Profil non trouvé"}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ArrowLeft color="#4247BD" size={24} />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error || 'Le profil n’existe pas ou n’a pas pu être chargé.'}</Text>
+      </View>
+    </SafeAreaView>
+  );
+}
 
   return (
     <SafeAreaView style={styles.container}>
