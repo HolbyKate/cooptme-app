@@ -1,10 +1,8 @@
-// DashboardScreen.tsx
 import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Animated,
   Alert,
   StyleSheet,
@@ -19,19 +17,11 @@ import {
   Briefcase,
   MessageCircle,
   CalendarDays,
+  QrCode,
 } from 'lucide-react-native';
-import { useNavigation, DrawerActions, CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import {
-  DashboardScreenNavigationProp,
-  DrawerParamList,
-  MainTabParamList,
-  RootStackParamList
-} from '../types/navigation';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { DashboardScreenNavigationProp, MainTabParamList } from '../types/navigation';
 import { ScreenWrapper } from '../components/ScreenWrapper';
-
 
 interface NavigationDestination {
   id: number;
@@ -39,7 +29,6 @@ interface NavigationDestination {
   screen: keyof MainTabParamList;
   icon: React.FC<any>;
 }
-
 
 const cardItems: NavigationDestination[] = [
   {
@@ -78,14 +67,7 @@ const cardItems: NavigationDestination[] = [
     screen: "Chat",
     icon: MessageCircle,
   },
-  {
-    id: 7,
-    title: "Scanner",
-    screen: "Scan",
-    icon: ScanLine,
-  }
 ];
-
 
 export default function DashboardScreen(): JSX.Element {
   const navigation = useNavigation<DashboardScreenNavigationProp>();
@@ -109,27 +91,28 @@ export default function DashboardScreen(): JSX.Element {
     ).start();
   }, []);
 
-  const handleNavigation = (destination: NavigationDestination) => {
+  const handleNavigation = (destination: NavigationDestination | "Scan") => {
     try {
-      switch (destination.screen) {
-        case 'Profiles':
-          navigation.navigate('Profiles', { userId: undefined });
-          break;
-        case 'Calendar':
-          navigation.navigate('Calendar', { selectedDate: undefined });
-          break;
-        default:
-          navigation.navigate(destination.screen);
+      if (destination === "Scan") {
+        navigation.navigate("Scan");
+        return;
+      }
+
+      if (destination.screen === 'Profiles') {
+        navigation.navigate('Profiles', { userId: undefined });
+      } else if (destination.screen === 'Calendar') {
+        navigation.navigate('Calendar', { selectedDate: undefined });
+      } else {
+        navigation.navigate(destination.screen);
       }
     } catch (error) {
-      console.error(`Erreur de navigation vers ${destination.screen}:`, error);
+      console.error(`Erreur de navigation vers ${typeof destination === 'string' ? destination : destination.screen}:`, error);
       Alert.alert(
         'Erreur de Navigation',
         'Impossible d\'accéder à cette section pour le moment.'
       );
     }
   };
-
 
   const rightContent = (
     <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
@@ -144,11 +127,16 @@ export default function DashboardScreen(): JSX.Element {
         rightContent: rightContent
       }}
     >
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Text style={styles.welcomeText}>Bonjour {userName},</Text>
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.welcomeText}>Bonjour {userName},</Text>
+          <TouchableOpacity 
+            style={styles.scanButton}
+            onPress={() => handleNavigation("Scan")}
+          >
+            <QrCode color="#FFFFFF" size={24} />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.notificationBar}>
           <Animated.View style={{
@@ -178,36 +166,54 @@ export default function DashboardScreen(): JSX.Element {
             </TouchableOpacity>
           ))}
         </View>
-      </ScrollView>
+      </View>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
     flex: 1,
-    padding: 20,
+    padding: 15,
   },
-  scrollContent: {
-    paddingBottom: 20,
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   welcomeText: {
     fontSize: 24,
     fontWeight: '600',
     color: '#4247BD',
-    marginBottom: 20,
   },
-  notificationBar: {
-    flexDirection: 'row',
+  scanButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 24,
+    backgroundColor: '#FF8F66',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 15,
-    borderRadius: 15,
-    marginBottom: 20,
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  notificationBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4247BD',
+    padding: 18,
+    borderRadius: 15,
+    marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 25,
     },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -215,8 +221,8 @@ const styles = StyleSheet.create({
   },
   notificationText: {
     fontSize: 14,
-    color: '#4247BD',
-    marginLeft: 8,
+    color: '#FFFFFF',
+    marginLeft: 12,
     fontWeight: '500',
   },
   menuGrid: {
@@ -226,9 +232,9 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     width: '48%',
-    aspectRatio: 1,
-    marginBottom: 15,
-    padding: 20,
+    aspectRatio: 1.1,
+    marginBottom: 8,
+    padding: 12,
     borderRadius: 15,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
@@ -243,18 +249,18 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   iconContainer: {
-    width: 65,
-    height: 65,
-    borderRadius: 25,
+    width: 55,
+    height: 55,
+    borderRadius: 22,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
     borderWidth: 1.5,
     borderColor: '#FF8F66',
   },
   menuItemText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#4247BD',
     fontWeight: '600',
     textAlign: 'center',

@@ -16,6 +16,7 @@ import {
     Settings,
     HelpCircle,
     LogOut,
+    User,
 } from 'lucide-react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,14 +29,9 @@ export default function CustomDrawer(props: any) {
             screen: 'Dashboard',
         },
         {
-            icon: Users,
-            label: 'Contacts',
-            screen: 'Contacts',
-        },
-        {
-            icon: MessageCircle,
-            label: 'Messages',
-            screen: 'Chat',
+            icon: User,
+            label: 'Mon compte',
+            screen: 'MyAccount',
         },
         {
             icon: Settings,
@@ -66,7 +62,7 @@ export default function CustomDrawer(props: any) {
             >
                 <View style={styles.header}>
                     <Image
-                        source={require('../../assets/logo_white.png')}
+                        source={require('../../assets/logo_transparent.png')}
                         style={styles.logo}
                         resizeMode="contain"
                     />

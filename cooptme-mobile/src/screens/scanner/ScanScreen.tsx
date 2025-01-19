@@ -10,11 +10,10 @@ import {
   Text,
 } from "react-native";
 import { Overlay } from "./Overlay";
-import LinkedInBrowser from "../../components/LinkedInBrowser";
-import { LinkedInProfile } from "../../utils/linkedinScraper";
 import { profileService } from "../../services/profileService";
 import { CategoryTitle } from '../../types/contacts';
-import { Gender } from '../../types/linkedinProfile';
+import { Gender, LinkedInProfile } from '../../types/linkedinProfile';
+import { LinkedInBrowser } from "../../components/LinkedInBrowser";
 
 type Props = {
   navigation: any;
@@ -57,7 +56,7 @@ export default function ScanScreen({ navigation }: Props) {
         photoId: null,
         gender: 'unknown' as Gender
       };
-      
+
       await profileService.saveProfile(completeProfile);
       Alert.alert(
         "Succès",
@@ -87,28 +86,28 @@ export default function ScanScreen({ navigation }: Props) {
   };
 
   const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
-    console.log("QR Code détecté :", { type, data });
-    if (data && !qrLock.current) {
-      qrLock.current = true;
-      if (data.includes("linkedin.com/in/")) {
-        setProfileUrl(data);
-        setLinkedInBrowserVisible(true);
-      } else {
-        Alert.alert(
-          "QR Code invalide",
-          "Ce QR code ne contient pas de profil LinkedIn valide.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                qrLock.current = false;
-              }
+  console.log("QR Code détecté :", { type, data });
+  if (data && !qrLock.current) {
+    qrLock.current = true;
+    if (data.includes("linkedin.com/in/") || data.includes("eqrco.de")) {
+      setProfileUrl(data);
+      setLinkedInBrowserVisible(true);
+    } else {
+      Alert.alert(
+        "QR Code invalide",
+        "Ce QR code ne contient pas de profil LinkedIn valide.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              qrLock.current = false;
             }
-          ]
-        );
-      }
+          }
+        ]
+      );
     }
-  };
+  }
+};
 
   if (hasPermission === null) {
     return <Text>Demande d'autorisation de la caméra...</Text>;

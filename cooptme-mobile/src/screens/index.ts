@@ -7,3 +7,4 @@ export { default as ProfilesScreen } from './ProfilesScreen';
 export { default as ChatScreen } from './ChatScreen';
 export { default as ChatConversationScreen } from './ChatConversationScreen';
 export { default as ScanScreen } from './scanner/ScanScreen';
+export { default as MyAccountScreen } from './MyAccountScreen';

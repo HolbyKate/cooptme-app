@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
 import { SharedHeader, HeaderProps } from './SharedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,7 +22,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
             <View style={[
                 styles.content,
                 {
-                    paddingBottom: insets.bottom + 80,
+                    paddingBottom: Platform.OS === 'ios' ? insets.bottom + 65 : 60
                 }
             ]}>
                 {children}
@@ -38,6 +38,5 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        paddingBottom: 0,
     },
 });

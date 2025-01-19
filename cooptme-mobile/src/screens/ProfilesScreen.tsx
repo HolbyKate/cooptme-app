@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker"; // Assurez-vous d'installer ce package
+import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 import { profileService } from "../services/profileService";
 import { LinkedInProfile } from "../types/linkedinProfile";

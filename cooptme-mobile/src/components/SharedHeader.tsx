@@ -18,13 +18,15 @@ export const SharedHeader: React.FC<HeaderProps> = ({ title, rightContent }) => 
                 barStyle="light-content"
             />
             <View style={styles.header}>
+                <View style={styles.leftContent}>
+                    {rightContent}
+                </View>
                 <Text style={styles.title}>{title}</Text>
                 <Image
-                    source={require('../../assets/logo_blue.png')}
+                    source={require('../../assets/logo_transparent.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
-                {rightContent && <View style={styles.rightContent}>{rightContent}</View>}
             </View>
         </View>
     );
@@ -38,6 +40,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 2,
         elevation: 3,
+        zIndex: 100,
     },
     header: {
         flexDirection: 'row',
@@ -46,24 +49,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         height: 56,
     },
+    leftContent: {
+        width: 50,
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+    },
     title: {
-        position: 'absolute',
-        marginLeft: 100,
         fontSize: 20,
         fontWeight: 'bold',
         color: '#FFFFFF',
-    },
-    rightContent: {
-        position: 'absolute',
-        marginLeft: 16,
-        height: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
+        textAlign: 'left',
     },
     logo: {
         height: 40,
         width: 100,
-        marginLeft: 'auto',
-        marginRight: 10,
     },
 });

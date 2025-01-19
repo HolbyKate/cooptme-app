@@ -15,7 +15,6 @@ import ContactsScreen from '../screens/ContactsScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import MyAccountScreen from '../screens/MyAccountScreen';
 
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
@@ -29,19 +28,50 @@ export default function AppNavigator() {
                     gestureDirection: 'horizontal',
                     animation: 'slide_from_right',
                     animationDuration: 200,
+                    presentation: 'card',
+                }}
+            >
+                {/* Écrans d'authentification */}
+                <Stack.Group>
+                    <Stack.Screen
+                        name="Home"
+                        component={HomeScreen}
+                        options={{
+                            animationTypeForReplace: 'pop',
+                        }}
+                    />
+                    <Stack.Screen
+                        name="Login"
+                        component={LoginScreen}
+                        options={{
+                            gestureEnabled: false,
+                        }}
+                    />
+                </Stack.Group>
+
+                {/* Application principale */}
+                <Stack.Group screenOptions={{ gestureEnabled: false }}>
+                    <Stack.Screen
+                        name="MainApp"
+                        component={MainAppScreen}
+                    />
+                </Stack.Group>
+
+                {/* Écrans secondaires */}
+                <Stack.Group screenOptions={{
+                    presentation: 'card',
+                    gestureEnabled: true,
                 }}>
-                <Stack.Screen name="Home" component={HomeScreen}/>
-                <Stack.Screen name="Login" component={LoginScreen}/>
-                <Stack.Screen name="MainApp" component={MainAppScreen}/>
-                <Stack.Screen name="MyAccount" component={MyAccountScreen} options={{headerShown: true}}/>
-                <Stack.Screen name="Contacts" component={ContactsScreen} options={{headerShown: true}}/>
-                <Stack.Screen name="Profiles" component={ProfilesScreen} options={{headerShown: true}}/>
-                <Stack.Screen name="Events" component={EventsScreen} options={{headerShown: true}}/>
-                <Stack.Screen name="Calendar" component={CalendarScreen} options={{headerShown: true}}/>
-                <Stack.Screen name="JobList" component={JobListScreen} options={{headerShown: true}}/>
-                <Stack.Screen name="Scan" component={ScanScreen} options={{headerShown: true}}/>
-                <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} options={{headerShown: true}}/>
-                <Stack.Screen name="ChatConversation" component={ChatConversationScreen as React.ComponentType<any>}/>
+                    <Stack.Screen name="MyAccount" component={MyAccountScreen} />
+                    <Stack.Screen name="Contacts" component={ContactsScreen} />
+                    <Stack.Screen name="Profiles" component={ProfilesScreen} />
+                    <Stack.Screen name="Events" component={EventsScreen} />
+                    <Stack.Screen name="Calendar" component={CalendarScreen} />
+                    <Stack.Screen name="JobList" component={JobListScreen} />
+                    <Stack.Screen name="Scan" component={ScanScreen} />
+                    <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
+                    <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
+                </Stack.Group>
             </Stack.Navigator>
         </NavigationContainer>
     );

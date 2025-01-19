@@ -1,33 +1,27 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Platform, View } from 'react-native';
-import { Home, UsersRound, UserRound, CalendarDays, MessageCircle, ScanLine } from 'lucide-react-native';
-import { MainTabParamList } from '../types/navigation';
-import MyAccountScreen from './MyAccountScreen';
-import DashboardScreen from './DashboardScreen';
-import CalendarScreen from './CalendarScreen';
-import ChatScreen from './ChatScreen';
-import ScanScreen from './scanner/ScanScreen';
+import { Platform, View, StyleSheet } from 'react-native';
+import { Home, UsersRound, CalendarDays, MessageCircle, ScanLine } from 'lucide-react-native';
+import DashboardScreen from '../screens/DashboardScreen';
+import ContactsScreen from '../screens/ContactsScreen';
+import CalendarScreen from '../screens/CalendarScreen';
+import ChatScreen from '../screens/ChatScreen';
+import ScanScreen from '../screens/scanner/ScanScreen';
 
-const Tab = createBottomTabNavigator<MainTabParamList>();
+const Tab = createBottomTabNavigator();
 
-const TabNavigator = () => {
+export default function TabNavigator() {
     return (
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
                 tabBarShowLabel: true,
                 tabBarStyle: {
-                    borderTopWidth: 1,
-                    borderTopColor: '#E0E0E0',
-                    backgroundColor: '#FF8F66',
+                    backgroundColor: '#FFFFFF',
                     height: Platform.OS === 'ios' ? 80 : 60,
                     paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    position: 'relative',
-                    zIndex: 999,
+                    borderTopWidth: 1,
+                    borderTopColor: '#E0E0E0',
                     elevation: 8,
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: -2 },
@@ -38,7 +32,7 @@ const TabNavigator = () => {
                 tabBarInactiveTintColor: '#666666',
             }}
         >
-            <Tab.Screen
+            <Tab.Screen 
                 name="Dashboard"
                 component={DashboardScreen}
                 options={{
@@ -49,10 +43,10 @@ const TabNavigator = () => {
                 }}
             />
             <Tab.Screen
-                name="MyAccount"
-                component={MyAccountScreen}
+                name="Contacts"
+                component={ContactsScreen}
                 options={{
-                    tabBarLabel: 'Mon compte',
+                    tabBarLabel: 'Contacts',
                     tabBarIcon: ({ color, size }) => (
                         <UsersRound size={size} color={color} strokeWidth={1.5} />
                     ),
@@ -90,6 +84,4 @@ const TabNavigator = () => {
             />
         </Tab.Navigator>
     );
-};
-
-export default TabNavigator;
+}
