@@ -1,44 +1,38 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+generator client {
+  provider = "prisma-client-js"
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  provider  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?   // Nullable car les utilisateurs OAuth n'auront pas de mot de passe
+  firstName     String
+  lastName      String
+  provider      String    @default("email") // 'email', 'google', 'linkedin'
+  providerId    String?   // ID externe de l'authentification OAuth
+  photoUrl      String?
+  roleId        String    @default("user")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+  emailVerified Boolean   @default(false)
+  isActive      Boolean   @default(true)
 
-model JobOffer {
-  id          String   @id @default(uuid())
-  title       String
-  company     String
-  description String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Contact {
-  id    Int     @id @default(autoincrement())
-  name  String
-  email String?
-  event String?
+  @@index([email])
+  @@index([provider, providerId])
 }
 
 model Profile {
-  id           Int      @id @default(autoincrement())
-  firstName    String?
-  lastName     String?
-  linkedinUrl  String?
-  emailAddress String?
-  company      String?
-  position     String?
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  url       String
+  company   String
+  job       String
+  category  String?
 }

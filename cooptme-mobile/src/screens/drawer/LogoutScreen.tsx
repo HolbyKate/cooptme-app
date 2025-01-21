@@ -1,36 +1,36 @@
-// screens/LogoutScreen.tsx
-import React, { useEffect, useContext } from 'react';
-import { StyleSheet, View, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../types/navigation';
-import { AuthContext } from '../../contexts/AuthContext';
-
-type LogoutScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function LogoutScreen() {
-    const navigation = useNavigation<LogoutScreenNavigationProp>();
-    const { signOut } = useContext(AuthContext);
+    const { signOut } = useAuth();
 
-    useEffect(() => {
-        const handleLogout = async () => {
-            try {
-                await signOut();
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'Home' as keyof RootStackParamList }],
-                });
-            } catch (error) {
-                console.error('Erreur lors de la déconnexion:', error);
-            }
-        };
-
-        handleLogout();
-    }, [navigation, signOut]);
+    const handleLogout = () => {
+        Alert.alert(
+            'Déconnexion',
+            'Êtes-vous sûr de vouloir vous déconnecter ?',
+            [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                    text: 'Déconnexion',
+                    onPress: async () => {
+                        try {
+                            await signOut();
+                        } catch (error) {
+                            console.error('Erreur lors de la déconnexion :', error);
+                        }
+                    },
+                },
+            ]
+        );
+    };
 
     return (
-        <View style={styles.container}>
-            <ActivityIndicator size="large" color="#4247BD" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text>Vous serez déconnecté.</Text>
+            <TouchableOpacity onPress={handleLogout}>
+                <Text style={{ color: 'red' }}>Se déconnecter</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -40,6 +40,22 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        padding: 20,
+    },
+    message: {
+        fontSize: 16,
+        marginBottom: 20,
+        color: '#4247BD',
+    },
+    logoutButton: {
+        padding: 15,
+        backgroundColor: '#FF6666',
+        borderRadius: 10,
+    },
+    logoutText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
     },
 });
+
+

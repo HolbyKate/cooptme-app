@@ -3,5 +3,16 @@ node_modules
 .env
 .venv/lib/python3.12/site-packages/
 
+# Mobile
+cooptme-mobile/node_modules/
+cooptme-mobile/.expo/
+cooptme-mobile/.env
 
+# Backend
+cooptme-backend/node_modules/
+cooptme-backend/.env
+
+# Global
+.env
+node_modules/
 .DS_Store

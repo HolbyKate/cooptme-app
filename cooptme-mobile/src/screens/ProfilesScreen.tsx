@@ -10,53 +10,80 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
-import { profileService } from "../services/profileService";
-import { LinkedInProfile } from "../types/linkedinProfile";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 import { SharedHeader } from "../components/SharedHeader";
 
 type ProfilesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+type Profile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  url: string;
+  company: string;
+  job: string;
+  category: string;
+};
+
 export default function ProfilesScreen() {
   const navigation = useNavigation<ProfilesScreenNavigationProp>();
-  const [profiles, setProfiles] = useState<LinkedInProfile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
+  // Charger les catégories et profils
   useEffect(() => {
-  const loadProfiles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    const loadCategoriesAndProfiles = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("http://localhost:3000/profiles");
+        const allProfiles: Profile[] = await response.json();
 
-      const loadedProfiles =
-        selectedCategory === 'All'
-          ? await profileService.getLinkedInProfiles()
-          : await profileService.getLinkedInProfilesByCategory(selectedCategory);
+        // Charger les catégories uniques
+        const uniqueCategories = Array.from(new Set(allProfiles.map((p) => p.category)));
+        setCategories(["All", ...uniqueCategories]);
 
-      setProfiles(loadedProfiles);
-    } catch (error: any) {
-      setError(error.message || 'Erreur lors du chargement des profils.');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setProfiles(allProfiles);
+      } catch (error: any) {
+        setError("Erreur lors du chargement des données.");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  loadProfiles();
-}, [selectedCategory]);
+    loadCategoriesAndProfiles();
+  }, []);
 
-  const renderProfileItem = ({ item }: { item: LinkedInProfile }) => (
+  // Charger les profils filtrés
+  useEffect(() => {
+    const loadFilteredProfiles = async () => {
+      if (selectedCategory === "All") {
+        const response = await fetch("http://localhost:3000/profiles");
+        const allProfiles: Profile[] = await response.json();
+        setProfiles(allProfiles);
+      } else {
+        const response = await fetch(`http://localhost:3000/profiles/${selectedCategory}`);
+        const filteredProfiles: Profile[] = await response.json();
+        setProfiles(filteredProfiles);
+      }
+    };
+
+    loadFilteredProfiles();
+  }, [selectedCategory]);
+
+  const renderProfileItem = ({ item }: { item: Profile }) => (
     <TouchableOpacity
       style={styles.profileCard}
-      onPress={() => navigation.navigate("ProfileDetail", { profileId: item.id })}
+      onPress={() => navigation.navigate("ProfileDetail", { profileId: item.id.toString() })}
     >
       <Text style={styles.name}>
         {item.firstName} {item.lastName}
       </Text>
-      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.title}>{item.job}</Text>
       <Text style={styles.company}>{item.company}</Text>
     </TouchableOpacity>
   );
@@ -92,13 +119,9 @@ export default function ProfilesScreen() {
           onValueChange={(itemValue) => setSelectedCategory(itemValue)}
           style={styles.picker}
         >
-          <Picker.Item label="Tous" value="All" />
-          <Picker.Item label="IT" value="IT" />
-          <Picker.Item label="Marketing" value="Marketing" />
-          <Picker.Item label="RH" value="RH" />
-          <Picker.Item label="Finance" value="Finance" />
-          <Picker.Item label="Communication" value="Communication" />
-          {/* Ajoutez d'autres catégories ici */}
+          {categories.map((category) => (
+            <Picker.Item key={category} label={category} value={category} />
+          ))}
         </Picker>
 
         {profiles.length === 0 ? (
@@ -182,4 +205,3 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 });
-

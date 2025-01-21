@@ -12,7 +12,8 @@ import {
 } from "react-native";
 import { Calendar, MapPin, Clock } from "lucide-react-native";
 import { useNavigation } from '@react-navigation/native';
-import { EventService, EventDTO } from "../services/events";
+import { eventService as EventService } from '../api/services/events/event.service';
+import { EventDTO } from '../types/index';
 import { Linking } from "react-native";
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';

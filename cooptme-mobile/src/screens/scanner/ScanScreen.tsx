@@ -10,10 +10,10 @@ import {
   Text,
 } from "react-native";
 import { Overlay } from "./Overlay";
-import { profileService } from "../../services/profileService";
-import { CategoryTitle } from '../../types/contacts';
-import { Gender, LinkedInProfile } from '../../types/linkedinProfile';
+import { profileService } from '../../api/services/profiles/profileService';
+import { CategoryTitle } from '../../types/index';
 import { LinkedInBrowser } from "../../components/LinkedInBrowser";
+import { Gender, LinkedInProfile } from '../../types/index';
 
 type Props = {
   navigation: any;

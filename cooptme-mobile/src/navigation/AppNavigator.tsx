@@ -5,9 +5,8 @@ import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import MainAppScreen from '../screens/MainAppScreen';
 import EventsScreen from '../screens/EventsScreen';
-import JobListScreen from '../screens/JobScreen';
+import JobScreen from '../screens/JobScreen';
 import ScanScreen from '../screens/scanner/ScanScreen';
-import ProfileDetailScreen from '../screens/ProfileDetailScreen';
 import ProfilesScreen from '../screens/ProfilesScreen';
 import ChatConversationScreen from '../screens/ChatConversationScreen';
 import { RootStackParamList } from '../types/navigation';
@@ -27,11 +26,9 @@ export default function AppNavigator() {
                     gestureEnabled: true,
                     gestureDirection: 'horizontal',
                     animation: 'slide_from_right',
-                    animationDuration: 200,
-                    presentation: 'card',
                 }}
             >
-                {/* Écrans d'authentification */}
+                {/* Auth Group */}
                 <Stack.Group>
                     <Stack.Screen
                         name="Home"
@@ -49,7 +46,7 @@ export default function AppNavigator() {
                     />
                 </Stack.Group>
 
-                {/* Application principale */}
+                {/* Main App Group */}
                 <Stack.Group screenOptions={{ gestureEnabled: false }}>
                     <Stack.Screen
                         name="MainApp"
@@ -57,19 +54,20 @@ export default function AppNavigator() {
                     />
                 </Stack.Group>
 
-                {/* Écrans secondaires */}
-                <Stack.Group screenOptions={{
-                    presentation: 'card',
-                    gestureEnabled: true,
-                }}>
+                {/* Secondary Screens Group */}
+                <Stack.Group
+                    screenOptions={{
+                        presentation: 'card',
+                        gestureEnabled: true,
+                    }}
+                >
                     <Stack.Screen name="MyAccount" component={MyAccountScreen} />
                     <Stack.Screen name="Contacts" component={ContactsScreen} />
                     <Stack.Screen name="Profiles" component={ProfilesScreen} />
                     <Stack.Screen name="Events" component={EventsScreen} />
                     <Stack.Screen name="Calendar" component={CalendarScreen} />
-                    <Stack.Screen name="JobList" component={JobListScreen} />
+                    <Stack.Screen name="Job" component={JobScreen} />
                     <Stack.Screen name="Scan" component={ScanScreen} />
-                    <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
                     <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
                 </Stack.Group>
             </Stack.Navigator>
