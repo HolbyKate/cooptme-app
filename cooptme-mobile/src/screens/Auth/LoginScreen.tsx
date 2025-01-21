@@ -8,18 +8,20 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import * as Google from 'expo-auth-session/providers/google';
-import { googleConfig } from '../api/config/oauth';
-import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../api/services/auth/auth.api.service';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
+import { googleConfig } from '../../api/config/oauth';
+import { useAuth } from '../../contexts/AuthContext';
+import { authService } from '../../api/services/auth/auth.api.service';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/navigation';
+import { CommonActions } from '@react-navigation/native';
 
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
-};
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
 
 export default function LoginScreen({ navigation }: Props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,27 +30,49 @@ export default function LoginScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
+  // Configuration Google OAuth
+  const [, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
+    androidClientId: googleConfig.androidClientId,
+    iosClientId: googleConfig.iosClientId,
+    clientId: googleConfig.expoClientId,
+    scopes: ['profile', 'email'],
+  });
+
   const handleEmailLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez entrer un email et un mot de passe');
-      return;
+  if (!email || !password) {
+    Alert.alert('Erreur', 'Email et mot de passe sont obligatoires.');
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+    console.log('🔑 Tentative de connexion pour:', email);
+
+    const response = await authService.emailLogin(email, password);
+    console.log('📨 Réponse reçue:', response);
+
+    if (!response.token) {
+      throw new Error('Token manquant dans la réponse');
     }
 
-    try {
-      setIsLoading(true);
-      console.log('🔑 Tentative de connexion pour:', email);
+    await login(email, password);
+    console.log('✅ Connexion réussie');
 
-      const response = await authService.emailLogin(email, password);
-      console.log('📨 Réponse reçue:', response);
-
-      if (!response.token) {
-        throw new Error('Token manquant dans la réponse');
-      }
-
-      await login(email, password);
-      console.log('✅ Connexion réussie');
-      navigation.replace('MainApp');
-    } catch (error: any) {
+    // Utilisez dispatch pour reset la navigation
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainApp',
+            state: {
+              routes: [{ name: 'Dashboard' }]
+            }
+          }
+        ]
+      })
+    );
+  } catch (error: any) {
       console.error('❌ Erreur détaillée:', {
         message: error.message,
         response: error.response?.data,
@@ -68,32 +92,38 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
-  // Configuration Google OAuth
-  const [, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
-    androidClientId: googleConfig.androidClientId,
-    iosClientId: googleConfig.iosClientId,
-    clientId: googleConfig.expoClientId,
-    scopes: ['profile', 'email'],
-  });
-
   const handleGoogleLogin = async () => {
-    try {
-      setIsLoading(true);
-      console.log('🔑 Tentative de connexion Google');
-      const result = await promptGoogleAsync();
+  try {
+    setIsLoading(true);
+    console.log('🔑 Tentative de connexion Google');
+    const result = await promptGoogleAsync();
 
-      if (result?.type === 'success') {
-        const { authentication } = result;
-        console.log('📱 Token Google obtenu');
+    if (result?.type === 'success') {
+      const { authentication } = result;
+      console.log('📱 Token Google obtenu');
 
-        const response = await authService.googleLogin(authentication?.accessToken || '');
-        console.log('📨 Réponse serveur reçue');
+      const response = await authService.googleLogin(authentication?.accessToken || '');
+      console.log('📨 Réponse serveur reçue');
 
-        await login(response.email, '');  // Mot de passe vide pour login Google
-        console.log('✅ Connexion Google réussie');
-        navigation.replace('MainApp');
-      }
-    } catch (error: any) {
+      await login(response.email, '');
+      console.log('✅ Connexion Google réussie');
+
+      // Même approche que pour handleEmailLogin
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'MainApp',
+              state: {
+                routes: [{ name: 'Dashboard' }]
+              }
+            }
+          ]
+        })
+      );
+    }
+  } catch (error: any) {
       console.error('❌ Erreur Google Login:', {
         message: error.message,
         response: error.response?.data,
@@ -104,6 +134,15 @@ export default function LoginScreen({ navigation }: Props) {
       setIsLoading(false);
     }
   };
+  const handleRegisterPress = () => {
+  console.log('Navigating to Register...');
+  try {
+    navigation.navigate('Register');
+} catch (error) {
+    console.error('Erreur de navigation :', error);
+  }
+};
+
 
   if (isLoading) {
     return (
@@ -114,9 +153,12 @@ export default function LoginScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <Image
-        source={require('../../assets/logo_transparent.png')}
+        source={require('../../../assets/logo_transparent.png')}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -160,13 +202,13 @@ export default function LoginScreen({ navigation }: Props) {
         <Text style={styles.googleButtonText}>Se connecter avec Google</Text>
       </TouchableOpacity>
 
-      <View style={styles.signupContainer}>
-        <Text style={styles.signupText}>Vous n'avez pas de compte ?</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.signupLink}>Créer un compte</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      <View style={styles.registerContainer}>
+    <Text style={styles.registerText}>Vous n'avez pas de compte ?</Text>
+    <TouchableOpacity onPress={handleRegisterPress}>
+        <Text style={styles.registerLink}>Créer un compte</Text>
+    </TouchableOpacity>
+</View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -211,7 +253,7 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     width: '100%',
-    backgroundColor: '#0066CC',
+    backgroundColor: '#FF8F66',
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
@@ -235,15 +277,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  signupContainer: {
+  registerContainer: {
     flexDirection: 'row',
     marginTop: 20,
   },
-  signupText: {
+  registerText: {
     color: '#FFFFFF',
     marginRight: 5,
   },
-  signupLink: {
+  registerLink: {
     color: '#FFFFFF',
     fontWeight: 'bold',
     textDecorationLine: 'underline',

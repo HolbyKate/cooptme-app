@@ -94,7 +94,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
             ref={video}
             style={styles.logo}
             resizeMode={ResizeMode.CONTAIN}
-            source={require("../../assets/logo_blue_video.mp4")}
+            source={require("../../../assets/logo_blue_video.mp4")}
             shouldPlay
             isLooping
             isMuted

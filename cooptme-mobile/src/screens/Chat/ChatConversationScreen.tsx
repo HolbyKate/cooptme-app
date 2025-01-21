@@ -11,8 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { ArrowLeft, Send } from 'lucide-react-native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/navigation';
 
 
 type Message = {
@@ -22,15 +22,7 @@ type Message = {
   sender: 'user' | 'other';
 };
 
-type ChatConversationProps = {
-  navigation: NativeStackNavigationProp<any>;
-  route: {
-    params: {
-      chatId: string;
-      name: string;
-    };
-  };
-};
+type ChatConversationScreenProps = NativeStackScreenProps<RootStackParamList, 'ChatConversation'>;
 
 const initialMessages: Message[] = [
   {
@@ -48,7 +40,7 @@ const initialMessages: Message[] = [
   // Ajoutez plus de messages ici
 ];
 
-export default function ChatConversation({ navigation, route }: ChatConversationProps) {
+export default function ChatConversationScreen({ navigation, route }: ChatConversationScreenProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [newMessage, setNewMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);

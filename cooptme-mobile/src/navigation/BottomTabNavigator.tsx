@@ -1,25 +1,24 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import DashboardScreen from '../screens/DashboardScreen';
-import ContactsScreen from '../screens/ContactsScreen';
-import CalendarScreen from '../screens/CalendarScreen';
-import ChatScreen from '../screens/ChatScreen';
-import ScanScreen from '../screens/scanner/ScanScreen';
-import { MainTabParamList } from '../types/navigation';
+import DashboardScreen from '../screens/Dashboard/DashboardScreen';
+import CalendarScreen from '../screens/Dashboard/CalendarScreen';
+import ChatScreen from '../screens/Chat/ChatScreen';
+import ScanScreen from '../screens/Scanner/ScanScreen';
 import { Home, UsersRound, CalendarDays, MessageCircle, ScanLine } from 'lucide-react-native';
+import MyAccountScreen from '@/screens/User/MyAccountScreen';
 
-const Tab = createBottomTabNavigator<MainTabParamList>();
+const BottomTab = createBottomTabNavigator();
 
-export default function TabNavigator() {
+export default function BottomTabNavigator() {
     return (
-        <Tab.Navigator
+        <BottomTab.Navigator
             screenOptions={{
+                tabBarActiveTintColor: '#0066FF',
+                tabBarInactiveTintColor: 'gray',
                 headerShown: false,
-                tabBarActiveTintColor: '#4247BD',
-                tabBarInactiveTintColor: '#666666',
             }}
         >
-            <Tab.Screen
+            <BottomTab.Screen
                 name="Dashboard"
                 component={DashboardScreen}
                 options={{
@@ -27,15 +26,15 @@ export default function TabNavigator() {
                     tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
                 }}
             />
-            <Tab.Screen
-                name="Contacts"
-                component={ContactsScreen}
+            <BottomTab.Screen
+                name="MyAccount"
+                component={MyAccountScreen}
                 options={{
-                    tabBarLabel: 'Contacts',
+                    tabBarLabel: 'Mon compte',
                     tabBarIcon: ({ color, size }) => <UsersRound size={size} color={color} />,
                 }}
             />
-            <Tab.Screen
+            <BottomTab.Screen
                 name="Calendar"
                 component={CalendarScreen}
                 options={{
@@ -43,7 +42,7 @@ export default function TabNavigator() {
                     tabBarIcon: ({ color, size }) => <CalendarDays size={size} color={color} />,
                 }}
             />
-            <Tab.Screen
+            <BottomTab.Screen
                 name="Chat"
                 component={ChatScreen}
                 options={{
@@ -51,7 +50,7 @@ export default function TabNavigator() {
                     tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
                 }}
             />
-            <Tab.Screen
+            <BottomTab.Screen
                 name="Scan"
                 component={ScanScreen}
                 options={{
@@ -59,8 +58,6 @@ export default function TabNavigator() {
                     tabBarIcon: ({ color, size }) => <ScanLine size={size} color={color} />,
                 }}
             />
-        </Tab.Navigator>
+        </BottomTab.Navigator>
     );
 }
-
-

@@ -11,8 +11,8 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../types/navigation";
-import { SharedHeader } from "../components/SharedHeader";
+import { RootStackParamList } from "../../navigation/navigation";
+import { SharedHeader } from "../../components/SharedHeader";
 
 type ProfilesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

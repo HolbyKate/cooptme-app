@@ -13,8 +13,8 @@ import { Search } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from 'expo-linear-gradient';
-import { SharedHeader } from '../components/SharedHeader';
-import { RootStackParamList } from '../types/navigation';
+import { SharedHeader } from '../../components/SharedHeader';
+import { RootStackParamList } from '../../navigation/navigation';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

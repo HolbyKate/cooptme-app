@@ -12,15 +12,15 @@ import {
 } from "react-native";
 import { Calendar, MapPin, Clock } from "lucide-react-native";
 import { useNavigation } from '@react-navigation/native';
-import { eventService as EventService } from '../api/services/events/event.service';
-import { EventDTO } from '../types/index';
+import { eventService as EventService } from '../../api/services/events/event.service';
+import { EventDTO } from '../../types/index';
 import { Linking } from "react-native";
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MainTabParamList, RootStackParamList } from '../types/navigation';
+import { MainTabParamList, RootStackParamList } from '../../navigation/navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SharedHeader } from '../components/SharedHeader';
+import { SharedHeader } from '../../components/SharedHeader';
 
 type EventsScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Events'>,

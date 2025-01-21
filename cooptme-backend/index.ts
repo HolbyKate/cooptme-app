@@ -60,6 +60,26 @@ router.post("/auth/login", async (req: Request, res: Response) => {
     }
 });
 
+// Route pour récupérer les contacts triés par ordre alphabétique
+router.get("/contacts", async (req: Request, res: Response) => {
+    try {
+        const contacts = await prisma.contact.findMany({
+            orderBy: { lastName: 'asc' }, // Tri par ordre alphabétique
+        });
+
+        res.json({
+            success: true,
+            data: contacts,
+        });
+    } catch (error) {
+        console.error("🚨 Erreur lors de la récupération des contacts :", error);
+        res.status(500).json({
+            success: false,
+            error: "Erreur interne du serveur",
+        });
+    }
+});
+
 app.use('/api', router);
 
 const PORT = Number(process.env.PORT) || 3000;

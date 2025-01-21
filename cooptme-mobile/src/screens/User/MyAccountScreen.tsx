@@ -15,7 +15,7 @@ import QRCode from 'react-native-qrcode-svg';
 import * as Linking from 'expo-linking';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SharedHeader } from '../components/SharedHeader';
+import { SharedHeader } from '../../components/SharedHeader';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -26,7 +26,7 @@ export default function MyAccountScreen() {
         title: 'Full Stack Developer Student',
         company: 'Holberton School',
         linkedinUrl: 'https://www.linkedin.com/in/cathyaugustin',
-        photo: require('../../assets/JH0A3850.jpg'),
+        photo: require('../../../assets/JH0A3850.jpg'),
     });
 
     const qrSlideAnim = useRef(new Animated.Value(200)).current;
@@ -80,7 +80,7 @@ export default function MyAccountScreen() {
                 <Image
                     source={userData.photo}
                     style={styles.avatar}
-                    defaultSource={require('../../assets/JH0A3850.jpg')}
+                    defaultSource={require('../../../assets/JH0A3850.jpg')}
                 />
             );
         }

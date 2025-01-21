@@ -1,38 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[] @relation("RoleToUser") // Ajout de la relation nommée
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String?   // Nullable car les utilisateurs OAuth n'auront pas de mot de passe
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password      String?
   firstName     String
   lastName      String
-  provider      String    @default("email") // 'email', 'google', 'linkedin'
-  providerId    String?   // ID externe de l'authentification OAuth
+  provider      String   @default("email")
+  roleId        Int
   photoUrl      String?
-  roleId        String    @default("user")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLoginAt   DateTime?
-  emailVerified Boolean   @default(false)
-  isActive      Boolean   @default(true)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@index([email])
-  @@index([provider, providerId])
+  role Role @relation("RoleToUser", fields: [roleId], references: [id]) // Relation bidirectionnelle
 }
 
 model Profile {
-  id        Int      @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   firstName String
   lastName  String
   url       String
   company   String
   job       String
   category  String?
+}
+
+model Contact {
+  id        Int    @id @default(autoincrement())
+  firstName String
+  lastName  String
+  url       String
+  company   String
+  job       String
 }

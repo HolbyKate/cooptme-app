@@ -2,145 +2,41 @@ import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
-import {
-  Home,
-  UsersRound,
-  CalendarDays,
-  MessageCircle,
-  ScanLine,
-  User,
-  UserRound,
-} from 'lucide-react-native';
 
 // Import des écrans
-import HomeScreen from './src/screens/HomeScreen';
-import LoginScreen from './src/screens/LoginScreen';
-import ContactsScreen from './src/screens/ContactsScreen';
-import CalendarScreen from './src/screens/CalendarScreen';
-import ScanScreen from './src/screens/scanner/ScanScreen';
-import ChatScreen from './src/screens/ChatScreen';
-import MyAccountScreen from './src/screens/MyAccountScreen';
-import LogoutScreen from './src/screens/drawer/LogoutScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
-import ChatConversationScreen from './src/screens/ChatConversationScreen';
-import HelpScreen from './src/screens/drawer/HelpScreen';
-import SettingsScreen from './src/screens/drawer/SettingsScreen';
-import { RootStackParamList, DrawerParamList, MainTabParamList } from './src/types/navigation';
+import HomeScreen from './src/screens/Auth/HomeScreen';
+import LoginScreen from './src/screens/Auth/LoginScreen';
+import ContactsScreen from './src/screens/Dashboard/ContactsScreen';
+import CalendarScreen from './src/screens/Dashboard/CalendarScreen';
+import ScanScreen from './src/screens/Scanner/ScanScreen';
+import ChatScreen from './src/screens/Chat/ChatScreen';
+import ChatConversationScreen from './src/screens/Chat/ChatConversationScreen';
+import DrawerNavigator from '@/navigation/DrawerNavigator';
+import ProfilesScreen from '@/screens/Dashboard/ProfilesScreen';
+import JobScreen from '@/screens/Dashboard/JobScreen';
+import EventsScreen from '@/screens/Dashboard/EventsScreen';
+import { RootStackParamList } from './src/navigation/navigation';
 
-// Définir les stacks et navigateurs
+// Définir les stacks
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const Drawer = createDrawerNavigator<DrawerParamList>();
-const Tab = createBottomTabNavigator<MainTabParamList>();
-
-// Configuration du TabNavigator
-function TabNavigator() {
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#4247BD',
-        tabBarInactiveTintColor: '#666666',
-        tabBarStyle: { backgroundColor: '#FFFFFF', height: 65 },
-      }}
-    >
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{
-          tabBarLabel: 'Accueil',
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="MyAccount"
-        component={MyAccountScreen}
-        options={{
-          tabBarLabel: 'Mon Compte',
-          tabBarIcon: ({ color, size }) => <UserRound size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Calendar"
-        component={CalendarScreen}
-        options={{
-          tabBarLabel: 'Agenda',
-          tabBarIcon: ({ color, size }) => <CalendarDays size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Chat"
-        component={ChatScreen}
-        options={{
-          tabBarLabel: 'Messages',
-          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Scan"
-        component={ScanScreen}
-        options={{
-          tabBarLabel: 'Scanner',
-          tabBarIcon: ({ color, size }) => <ScanLine size={size} color={color} />,
-        }}
-      />
-    </Tab.Navigator>
-  );
-}
-
-// Configuration du DrawerNavigator
-function DrawerNavigator() {
-    return (
-        <Drawer.Navigator
-            initialRouteName="TabNavigator"
-            screenOptions={{
-                headerShown: false, // Désactiver les en-têtes par défaut
-            }}
-        >
-            <Drawer.Screen
-                name="TabNavigator"
-                component={TabNavigator}
-                options={{ drawerLabel: 'Accueil' }}
-            />
-            <Drawer.Screen
-                name="MyAccount"
-                component={MyAccountScreen}
-                options={{ drawerLabel: 'Mon Compte' }}
-            />
-            <Drawer.Screen
-                name="Settings"
-                component={SettingsScreen}
-                options={{ drawerLabel: 'Paramètres' }}
-            />
-            <Drawer.Screen
-                name="Help"
-                component={HelpScreen}
-                options={{ drawerLabel: 'Aide' }}
-            />
-            <Drawer.Screen
-                name="Logout"
-                component={LogoutScreen}
-                options={{ drawerLabel: 'Déconnexion' }}
-            />
-        </Drawer.Navigator>
-    );
-}
 
 // Configuration de AppStack
 function AppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainApp" component={DrawerNavigator} />
-      <Stack.Screen
-        name="ChatConversation"
-        component={ChatConversationScreen}
-        options={{ animation: 'slide_from_right' }}
-      />
+      <Stack.Screen name="Contacts" component={ContactsScreen} />
+      <Stack.Screen name="Profiles" component={ProfilesScreen} />
+      <Stack.Screen name="Events" component={EventsScreen} />
+      <Stack.Screen name="Calendar" component={CalendarScreen} />
+      <Stack.Screen name="Job" component={JobScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Scan" component={ScanScreen} />
+      <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
     </Stack.Navigator>
   );
 }
@@ -150,11 +46,7 @@ function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ animation: 'slide_from_right' }}
-      />
+      <Stack.Screen name="Login" component={LoginScreen} />
     </Stack.Navigator>
   );
 }
@@ -188,4 +80,3 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
-

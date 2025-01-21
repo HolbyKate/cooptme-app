@@ -22,8 +22,8 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
-import { jobService } from '../api/services/jobs/job.service';
-import type { JobOffer } from '../api/services/api';
+import { jobService } from '../../api/services/jobs/job.service';
+import type { JobOffer } from '../../api/services/api';
 import { StyleSheet, Platform } from 'react-native';
 
 

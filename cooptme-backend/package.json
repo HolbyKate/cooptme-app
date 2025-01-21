@@ -4,13 +4,16 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.ts",
-    "dev": "ts-node src/index.ts",
+    "dev": "ts-node src/index.ts"
+  },
+  "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
+    "csv-parser": "^3.1.0",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2"
   },

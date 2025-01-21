@@ -9,7 +9,7 @@ import {
   Alert,
   Text,
 } from "react-native";
-import { Overlay } from "./Overlay";
+import { Overlay } from "../../screens/Scanner/Overlay";
 import { profileService } from '../../api/services/profiles/profileService';
 import { CategoryTitle } from '../../types/index';
 import { LinkedInBrowser } from "../../components/LinkedInBrowser";

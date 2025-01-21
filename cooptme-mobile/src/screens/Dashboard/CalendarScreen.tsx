@@ -18,8 +18,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import { SharedHeader } from '../components/SharedHeader';
-import { MainTabParamList } from '../types/navigation';
+import { SharedHeader } from '../../components/SharedHeader';
+import { MainTabParamList } from '../../navigation/navigation';
 
 // Type definitions
 type CalendarScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'Calendar'>;
