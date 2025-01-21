@@ -15,6 +15,7 @@ type AuthContextType = {
   userToken: string | null;
   userEmail: string | null;
   isLoading: boolean;
+  isAuthenticated: boolean; // Ajout d'un état pour suivre l'authentification
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [userToken, setUserToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Initialize authentication state from AsyncStorage
   reactUseEffect(() => {
@@ -45,9 +47,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (savedToken) {
           setUserToken(savedToken);
           setUserEmail(savedEmail);
+          setIsAuthenticated(true);
+          // Configure axios avec le token
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
+        // En cas d'erreur, on nettoie tout
+        await signOut();
       } finally {
         setIsLoading(false);
       }
@@ -83,8 +90,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('userEmail', email);
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUserToken(token);
       setUserEmail(email);
+      setIsAuthenticated(true);
     } catch (error) {
       console.error('Error during sign-in:', error);
       throw error;
@@ -95,8 +104,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userEmail');
+      delete axiosInstance.defaults.headers.common['Authorization'];
       setUserToken(null);
       setUserEmail(null);
+      setIsAuthenticated(false);
     } catch (error) {
       console.error('Error during sign-out:', error);
       throw error;
@@ -112,6 +123,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         userToken,
         userEmail,
         isLoading,
+        isAuthenticated,
       }}
     >
       {children}

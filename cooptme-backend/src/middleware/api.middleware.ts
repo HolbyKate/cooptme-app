@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthResponse } from '../../../cooptme-mobile/src/navigation/types';
+import { AuthResponse } from '..src/navigation/types';
 import { Platform } from 'react-native';
 
 const CONFIG = {

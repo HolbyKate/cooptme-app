@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 const prisma = new PrismaClient();
 const app = express();
 
-// Middleware avec logging
+// Middleware
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -46,36 +46,83 @@ router.post("/auth/login", async (req: Request, res: Response) => {
 
         // Pour le moment, acceptons n'importe quel mot de passe
         console.log("✅ Connexion réussie pour:", email);
-        res.json({
+        return res.json({
             success: true,
             token: "token-test",
             email: user.email
         });
     } catch (error) {
         console.error('🚨 Erreur de login:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: "Erreur lors de la connexion"
         });
     }
 });
 
-// Route pour récupérer les contacts triés par ordre alphabétique
+// Route pour récupérer les contacts
 router.get("/contacts", async (req: Request, res: Response) => {
     try {
         const contacts = await prisma.contact.findMany({
-            orderBy: { lastName: 'asc' }, // Tri par ordre alphabétique
+            orderBy: { lastName: 'asc' },
         });
 
-        res.json({
+        return res.json({
             success: true,
             data: contacts,
         });
     } catch (error) {
-        console.error("🚨 Erreur lors de la récupération des contacts :", error);
-        res.status(500).json({
+        console.error("🚨 Erreur lors de la récupération des contacts:", error);
+        return res.status(500).json({
             success: false,
             error: "Erreur interne du serveur",
+        });
+    }
+});
+
+// Routes pour les profils
+router.get("/profiles", async (req: Request, res: Response) => {
+    try {
+        const profiles = await prisma.profile.findMany({
+            orderBy: {
+                lastName: 'asc'
+            }
+        });
+
+        return res.json({
+            success: true,
+            data: profiles
+        });
+    } catch (error) {
+        console.error("🚨 Erreur lors de la récupération des profiles:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Erreur serveur"
+        });
+    }
+});
+
+router.get("/profiles/category/:category", async (req: Request, res: Response) => {
+    try {
+        const { category } = req.params;
+        const profiles = await prisma.profile.findMany({
+            where: {
+                category: category
+            },
+            orderBy: {
+                lastName: 'asc'
+            }
+        });
+
+        return res.json({
+            success: true,
+            data: profiles
+        });
+    } catch (error) {
+        console.error("🚨 Erreur lors de la récupération des profiles par catégorie:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Erreur serveur"
         });
     }
 });
@@ -84,5 +131,5 @@ app.use('/api', router);
 
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`API running at http://localhost:${PORT}/api`);
+    console.log(`🚀 API running at http://localhost:${PORT}/api`);
 });

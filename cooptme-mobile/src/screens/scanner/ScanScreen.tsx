@@ -10,7 +10,7 @@ import {
   Text,
 } from "react-native";
 import { Overlay } from "../../screens/Scanner/Overlay";
-import { profileService } from '../../api/services/profiles/profileService';
+import { profilesApiService } from '../../api/services/profiles/profiles.api.service';
 import { CategoryTitle } from '../../types/index';
 import { LinkedInBrowser } from "../../components/LinkedInBrowser";
 import { Gender, LinkedInProfile } from '../../types/index';
@@ -57,7 +57,7 @@ export default function ScanScreen({ navigation }: Props) {
         gender: 'unknown' as Gender
       };
 
-      await profileService.saveProfile(completeProfile);
+      await profilesApiService.saveProfile(completeProfile);
       Alert.alert(
         "Succès",
         "Le profil a été ajouté avec succès",

@@ -4,7 +4,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.ts",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "import-profiles": "ts-node scripts/import-profiles.ts",
+    "import-contacts": "ts-node scripts/import-contacts.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -22,6 +24,7 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.7",
+    "nodemon": "^3.1.9",
     "prisma": "^6.2.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"

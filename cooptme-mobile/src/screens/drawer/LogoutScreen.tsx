@@ -1,9 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+    Login: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 export default function LogoutScreen() {
     const { signOut } = useAuth();
+    const navigation = useNavigation<NavigationProp>();
 
     const handleLogout = () => {
         Alert.alert(
@@ -13,11 +22,18 @@ export default function LogoutScreen() {
                 { text: 'Annuler', style: 'cancel' },
                 {
                     text: 'Déconnexion',
+                    style: 'destructive',
                     onPress: async () => {
                         try {
                             await signOut();
+                            // Reset la navigation vers Login
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Login' }],
+                            });
                         } catch (error) {
                             console.error('Erreur lors de la déconnexion :', error);
+                            Alert.alert('Erreur', 'Impossible de se déconnecter');
                         }
                     },
                 },
@@ -26,10 +42,10 @@ export default function LogoutScreen() {
     };
 
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text>Vous serez déconnecté.</Text>
-            <TouchableOpacity onPress={handleLogout}>
-                <Text style={{ color: 'red' }}>Se déconnecter</Text>
+        <View style={styles.container}>
+            <Text style={styles.message}>Voulez-vous vous déconnecter ?</Text>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Text style={styles.logoutText}>Se déconnecter</Text>
             </TouchableOpacity>
         </View>
     );
@@ -41,6 +57,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
+        backgroundColor: '#FFFFFF',
     },
     message: {
         fontSize: 16,
@@ -51,11 +68,12 @@ const styles = StyleSheet.create({
         padding: 15,
         backgroundColor: '#FF6666',
         borderRadius: 10,
+        width: '100%',
+        alignItems: 'center',
     },
     logoutText: {
         color: '#FFFFFF',
         fontWeight: 'bold',
+        fontSize: 16,
     },
 });
-
-

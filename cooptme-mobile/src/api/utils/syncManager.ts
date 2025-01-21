@@ -1,5 +1,5 @@
 import NetInfo from "@react-native-community/netinfo";
-import { profileService } from "../services/profiles/profileService";
+import { profileService } from "../services/profiles/profiles.api.service";
 import type { LinkedInProfile } from "../../types";
 
 export const syncManager = {
