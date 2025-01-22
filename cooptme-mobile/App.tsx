@@ -6,6 +6,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { useEffect } from 'react';
+import { setupNotifications } from './src/api/utils/notifications';
 
 // Import des écrans
 import HomeScreen from './src/screens/Auth/HomeScreen';
@@ -68,6 +70,9 @@ function RootNavigator() {
 
 // Application principale
 export default function App() {
+  useEffect(() => {
+    setupNotifications().catch(console.error);
+  }, []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

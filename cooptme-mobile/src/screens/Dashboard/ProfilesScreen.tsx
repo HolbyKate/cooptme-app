@@ -71,9 +71,15 @@ const categories: CategoryCard[] = [
   { id: 'Other', title: 'Autres', icon: MoreHorizontal, color: '#9E9E9E' },
 ];
 
+const meetingPlaces = ['Holberton', 'Actual', 'La mêlée', 'La French Tech', 'Salon emploi', 'Aerospace Valley'];
+
+const getRandomMeetingPlace = () => {
+  return meetingPlaces[Math.floor(Math.random() * meetingPlaces.length)];
+};
+
 const meetAtColors: { [key: string]: string } = {
-  Holberton: '#007AFF',
-  Actual: '#FF9500',
+  'Holberton': '#007AFF',
+  'Actual': '#FF9500',
   'La mêlée': '#FF2D55',
   'La French Tech': '#4CD964',
   'Salon emploi': '#5856D6',
@@ -89,41 +95,57 @@ export default function ProfilesScreen() {
   const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
 
   useEffect(() => {
-    const loadProfiles = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get('/profiles');
-        if (response.data.success) {
-          setProfiles(response.data.data);
-        } else {
-          console.warn('Erreur lors de la récupération des profils:', response.data.error);
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement des profils:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadProfiles();
   }, []);
+
+  const loadProfiles = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/profiles');
+      if (response.data.success) {
+        const profilesWithMeetAt = response.data.data.map((profile: Profile) => ({
+          ...profile,
+          meetAt: getRandomMeetingPlace(),
+        }));
+        setProfiles(profilesWithMeetAt);
+      } else {
+        console.warn('Erreur lors de la récupération des profils:', response.data.error);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des profils:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCategoryPress = async (categoryId: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/profiles/category/${categoryId}`);
-      if (response.data.success) {
-        setFilteredProfiles(response.data.data);
-        setSelectedCategory(categoryId);
-        setModalVisible(true);
-      } else {
-        console.warn('Erreur lors de la récupération des profils par catégorie:', response.data.error);
-      }
+      const filtered = profiles.filter(profile => profile.category === categoryId);
+      setFilteredProfiles(filtered);
+      setSelectedCategory(categoryId);
+      setModalVisible(true);
     } catch (error) {
-      console.error('Erreur lors du chargement de la catégorie:', error);
+      console.error('Erreur lors du filtrage des profils:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderCategoryItem = ({ item }: { item: CategoryCard }) => {
+    const profileCount = profiles.filter(p => p.category === item.id).length;
+    return (
+      <TouchableOpacity
+        style={styles.categoryCard}
+        onPress={() => handleCategoryPress(item.id)}
+      >
+        <View style={[styles.iconContainer, { borderColor: item.color }]}>
+          <item.icon color={item.color} size={32} />
+        </View>
+        <Text style={styles.categoryTitle}>{item.title}</Text>
+        <Text style={styles.profileCount}>{profileCount} profils</Text>
+      </TouchableOpacity>
+    );
   };
 
   const renderProfileItem = ({ item }: { item: Profile }) => (
@@ -154,12 +176,6 @@ export default function ProfilesScreen() {
     </View>
   );
 
-  const filteredProfilesBySearch = profiles.filter(profile =>
-    `${profile.firstName} ${profile.lastName}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -172,55 +188,13 @@ export default function ProfilesScreen() {
     <SafeAreaView style={styles.container}>
       <SharedHeader title="Profils" />
 
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher une personne ou catégorie..."
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={(text) => {
-            setSearchQuery(text);
-            const query = text.toLowerCase();
-
-            const filtered = profiles.filter(profile =>
-              `${profile.firstName} ${profile.lastName}`.toLowerCase().includes(query)
-            );
-            setFilteredProfiles(filtered);
-
-            if (!text) setFilteredProfiles(profiles); // Réinitialiser si le champ est vide
-          }}
-        />
-      </View>
-
-      <ScrollView style={styles.scrollView}>
-        {/* Catégories */}
-        <View style={styles.gridContainer}>
-          {categories.map(category => {
-            const profileCount = profiles.filter(p => p.category === category.id).length;
-            return (
-              <TouchableOpacity
-                key={category.id}
-                style={styles.categoryCard}
-                onPress={() => handleCategoryPress(category.id)}
-              >
-                <View style={[styles.iconContainer, { borderColor: category.color }]}>
-                  <category.icon color={category.color} size={32} />
-                </View>
-                <Text style={styles.categoryTitle}>{category.title}</Text>
-                <Text style={styles.profileCount}>{profileCount} profils</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <FlatList
-          data={filteredProfiles}
-          renderItem={renderProfileItem}
-          keyExtractor={item => item.id}
-          nestedScrollEnabled={true}
-          contentContainerStyle={styles.profilesList}
-        />
-      </ScrollView>
+      <FlatList
+        data={categories}
+        renderItem={renderCategoryItem}
+        keyExtractor={item => item.id}
+        numColumns={2}
+        contentContainerStyle={styles.gridContainer}
+      />
 
       <Modal
         animationType="slide"
@@ -412,8 +386,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   meetAtLogo: {
-    width: 24,
-    height: 24,
+    width: 44,
+    height: 44,
     marginBottom: 4,
   },
   meetAtText: {

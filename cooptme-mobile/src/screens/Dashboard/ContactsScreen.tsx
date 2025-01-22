@@ -25,7 +25,7 @@ export default function ContactsScreen() {
 
     const fetchContacts = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/contacts');
+            const response = await axios.get('/contacts'); // Vérifiez que l'API retourne les contacts
             const dbContacts: Contact[] = response.data.data;
 
             const groupedContacts: { [key: string]: Contact[] } = dbContacts.reduce(
@@ -42,7 +42,7 @@ export default function ContactsScreen() {
                 .sort()
                 .map((letter) => ({
                     title: letter,
-                    data: groupedContacts[letter],
+                    data: groupedContacts[letter].sort((a, b) => a.lastName.localeCompare(b.lastName)),
                 }));
 
             setContacts(sections);

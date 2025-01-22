@@ -4,7 +4,7 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 export type MainTabParamList = {
     Dashboard: undefined;
     Contacts: undefined;
-    Profiles: { userId?: string };
+    Profiles: undefined;
     Events: undefined;
     Calendar: { selectedDate?: string };
     Job: undefined;
@@ -33,7 +33,7 @@ export type RootStackParamList = {
 
     // Modals
     Contacts: undefined;
-    Profiles: { userId?: string };
+    Profiles: undefined;
     Events: undefined;
     Calendar: { selectedDate?: string };
     Job: undefined;

@@ -11,6 +11,8 @@ import {
     RefreshControl,
     KeyboardAvoidingView,
     Linking,
+    StyleSheet,
+    Platform,
 } from 'react-native';
 import {
     ArrowLeft,
@@ -18,15 +20,173 @@ import {
     MapPin,
     Upload,
     Calendar,
-    Euro
+    Euro,
+    ChevronDown,
+    ChevronUp,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { jobService } from '../../api/services/jobs/job.service';
-import type { JobOffer } from '../../api/services/api';
-import { StyleSheet, Platform } from 'react-native';
+import type { JobOffer, JobSearchParams } from '../../types/index';
 
 
+// Composant JobCard séparé
+interface JobCardProps {
+    job: JobOffer;
+    isSelected: boolean;
+    onSelect: () => void;
+    onApply: () => void;
+}
+
+const JobCard: React.FC<JobCardProps> = ({ job, isSelected, onSelect, onApply }) => (
+    <TouchableOpacity
+        style={[styles.card, isSelected && styles.selectedCard]}
+        onPress={onSelect}
+    >
+        <View style={styles.cardHeader}>
+            <View style={styles.cardTitleContainer}>
+                <Text style={styles.cardTitle}>{job.title}</Text>
+                <Text style={styles.cardCompany}>{job.company}</Text>
+            </View>
+            <View style={styles.contractTypeBadge}>
+                <Text style={styles.contractTypeText}>{job.contractType}</Text>
+            </View>
+        </View>
+
+        <View style={styles.cardMetadata}>
+            <View style={styles.metadataItem}>
+                <MapPin size={16} color="#666666" />
+                <Text style={styles.metadataText}>{job.location}</Text>
+            </View>
+            {job.remote && (
+                <View style={styles.remoteBadge}>
+                    <Text style={styles.remoteText}>Remote</Text>
+                </View>
+            )}
+            {job.salary && (
+                <View style={styles.metadataItem}>
+                    <Euro size={16} color="#666666" />
+                    <Text style={styles.metadataText}>{job.salary}</Text>
+                </View>
+            )}
+            <View style={styles.metadataItem}>
+                <Calendar size={16} color="#666666" />
+                <Text style={styles.metadataText}>{job.postedDate}</Text>
+            </View>
+        </View>
+
+        <Text
+            style={[
+                styles.description,
+                isSelected ? styles.expandedDescription : styles.collapsedDescription
+            ]}
+            numberOfLines={isSelected ? undefined : 3}
+        >
+            {job.description}
+        </Text>
+
+        {isSelected && (
+            <>
+                <View style={styles.skillsContainer}>
+                    {job.skills.map((skill, index) => (
+                        <View key={index} style={styles.skillBadge}>
+                            <Text style={styles.skillText}>{skill}</Text>
+                        </View>
+                    ))}
+                </View>
+
+                {job.url && (
+                    <TouchableOpacity
+                        style={styles.applyButton}
+                        onPress={onApply}
+                    >
+                        <Text style={styles.applyButtonText}>Voir l'offre complète</Text>
+                    </TouchableOpacity>
+                )}
+            </>
+        )}
+    </TouchableOpacity>
+);
+
+interface CategorySectionProps {
+    category: string;
+    jobs: JobOffer[];
+    isExpanded: boolean;
+    onToggle: () => void;
+    selectedJobId: string | null;
+    onJobSelect: (id: string) => void;
+    onJobApply: (url: string) => void;
+}
+
+const CategorySection: React.FC<CategorySectionProps> = ({
+    category,
+    jobs,
+    isExpanded,
+    onToggle,
+    selectedJobId,
+    onJobSelect,
+    onJobApply
+}) => (
+    <View style={styles.categorySection}>
+        <TouchableOpacity onPress={onToggle} style={styles.categoryHeader}>
+            <Text style={styles.categoryTitle}>{category}</Text>
+            <View style={styles.categoryCount}>
+                <Text style={styles.categoryCountText}>{jobs.length}</Text>
+            </View>
+            {isExpanded ? (
+                <ChevronUp size={24} color="#4B5563" />
+            ) : (
+                <ChevronDown size={24} color="#4B5563" />
+            )}
+        </TouchableOpacity>
+
+        {isExpanded && (
+            <View>
+                {jobs.map((job) => (
+                    <JobCard
+                        key={job.id}
+                        job={job}
+                        isSelected={job.id === selectedJobId}
+                        onSelect={() => onJobSelect(job.id)}
+                        onApply={() => job.url && onJobApply(job.url)}
+                    />
+                ))}
+            </View>
+        )}
+    </View>
+);
+
+interface FileDropZoneProps {
+    onFileSelect: () => void;
+    uploading: boolean;
+}
+
+const FileDropZone: React.FC<FileDropZoneProps> = ({ onFileSelect, uploading }) => {
+    return (
+        <TouchableOpacity
+            style={styles.dropZone}
+            onPress={onFileSelect}
+            disabled={uploading}
+        >
+            <Upload size={32} color="#4B5563" />
+            <Text style={styles.dropZoneText}>
+                Importer des offres d'emploi
+            </Text>
+            <Text style={styles.dropZoneSubText}>
+                Format accepté : CSV
+            </Text>
+            {uploading && (
+                <ActivityIndicator
+                    style={styles.uploadingIndicator}
+                    size="small"
+                    color="#4c51c6"
+                />
+            )}
+        </TouchableOpacity>
+    );
+};
+
+// Composant principal
 export default function JobListScreen() {
     const navigation = useNavigation();
     const [jobs, setJobs] = useState<JobOffer[]>([]);
@@ -37,20 +197,26 @@ export default function JobListScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+    const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
     const loadJobs = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            const fetchedJobs = await jobService.fetchJobs();
+            const searchParams: JobSearchParams = {
+                term: searchTerm,
+                location: location,
+            };
+            const fetchedJobs = await jobService.fetchJobs(searchParams);
             setJobs(fetchedJobs);
         } catch (e) {
-            setError('Impossible de charger les offres. Veuillez réessayer.');
-            Alert.alert('Erreur', 'Impossible de charger les offres. Veuillez réessayer.');
+            const errorMessage = e instanceof Error ? e.message : 'Erreur inconnue';
+            setError(errorMessage);
+            Alert.alert('Erreur', errorMessage);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [searchTerm, location]);
 
     const handleFileUpload = async () => {
         try {
@@ -70,38 +236,21 @@ export default function JobListScreen() {
                     type: mimeType,
                 } as any);
 
-                await jobService.uploadJobsCSV(formData);
-                Alert.alert('Succès', 'Les offres ont été importées avec succès');
-                loadJobs();
+                const uploadResult = await jobService.uploadJobsCSV(formData);
+                if (uploadResult.success) {
+                    Alert.alert('Succès', 'Les offres ont été importées avec succès');
+                    loadJobs();
+                } else {
+                    throw new Error('Échec de l\'import');
+                }
             }
         } catch (error) {
-            Alert.alert('Erreur', "Erreur lors de l'importation du fichier CSV");
+            const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+            Alert.alert('Erreur', `Erreur lors de l'importation du fichier : ${errorMessage}`);
         } finally {
             setUploading(false);
         }
     };
-
-    const searchJobs = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const searchResults = await jobService.fetchJobs({
-                term: searchTerm,
-                location: location,
-            });
-            setJobs(searchResults);
-        } catch (e) {
-            setError('Erreur lors de la recherche. Veuillez réessayer.');
-            Alert.alert('Erreur', 'Erreur lors de la recherche. Veuillez réessayer.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const onRefresh = useCallback(() => {
-        setRefreshing(true);
-        loadJobs().finally(() => setRefreshing(false));
-    }, [loadJobs]);
 
     const handleOpenJob = async (url: string) => {
         try {
@@ -116,66 +265,23 @@ export default function JobListScreen() {
         }
     };
 
-    // Composant pour afficher une offre
-    const JobCard = ({ job }: { job: JobOffer }) => (
-        <TouchableOpacity
-            style={[
-                styles.card,
-                selectedJobId === job.id && styles.selectedCard
-            ]}
-            onPress={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
-        >
-            <View style={styles.cardHeader}>
-                <View style={styles.cardTitleContainer}>
-                    <Text style={styles.cardTitle}>{job.title}</Text>
-                    <Text style={styles.cardCompany}>{job.company}</Text>
-                </View>
-                <View style={styles.contractTypeBadge}>
-                    <Text style={styles.contractTypeText}>{job.contractType}</Text>
-                </View>
-            </View>
-
-            <View style={styles.cardMetadata}>
-                <View style={styles.metadataItem}>
-                    <MapPin size={16} color="#666666" />
-                    <Text style={styles.metadataText}>{job.location}</Text>
-                </View>
-                {job.salary && (
-                    <View style={styles.metadataItem}>
-                        <Euro size={16} color="#666666" />
-                        <Text style={styles.metadataText}>{job.salary}</Text>
-                    </View>
-                )}
-                <View style={styles.metadataItem}>
-                    <Calendar size={16} color="#666666" />
-                    <Text style={styles.metadataText}>{job.postedDate}</Text>
-                </View>
-            </View>
-
-            <Text
-                style={[
-                    styles.description,
-                    selectedJobId === job.id ? styles.expandedDescription : styles.collapsedDescription
-                ]}
-                numberOfLines={selectedJobId === job.id ? undefined : 3}
-            >
-                {job.description}
-            </Text>
-
-            {job.url && selectedJobId === job.id && (
-                <TouchableOpacity
-                    style={styles.applyButton}
-                    onPress={() => handleOpenJob(job.url!)}
-                >
-                    <Text style={styles.applyButtonText}>Voir l'offre sur Indeed</Text>
-                </TouchableOpacity>
-            )}
-        </TouchableOpacity>
-    );
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        loadJobs().finally(() => setRefreshing(false));
+    }, [loadJobs]);
 
     useEffect(() => {
         loadJobs();
     }, [loadJobs]);
+
+    const groupedJobs = jobs.reduce((acc, job) => {
+        const category = job.category || 'Autres';
+        if (!acc[category]) {
+            acc[category] = [];
+        }
+        acc[category].push(job);
+        return acc;
+    }, {} as Record<string, JobOffer[]>);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -183,6 +289,7 @@ export default function JobListScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
             >
+                {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity
                         onPress={() => navigation.goBack()}
@@ -191,17 +298,6 @@ export default function JobListScreen() {
                         <ArrowLeft color="#FFFFFF" size={24} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Gestion des offres d'emploi</Text>
-                    <TouchableOpacity
-                        onPress={handleFileUpload}
-                        disabled={uploading}
-                        style={styles.uploadButton}
-                    >
-                        {uploading ? (
-                            <ActivityIndicator color="#FFFFFF" size="small" />
-                        ) : (
-                            <Upload color="#FFFFFF" size={24} />
-                        )}
-                    </TouchableOpacity>
                 </View>
 
                 <ScrollView
@@ -210,6 +306,9 @@ export default function JobListScreen() {
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                     }
                 >
+                    <FileDropZone onFileSelect={handleFileUpload} uploading={uploading} />
+
+                    {/* Search Section */}
                     <View style={styles.searchSection}>
                         <View style={styles.searchInputContainer}>
                             <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
@@ -218,7 +317,7 @@ export default function JobListScreen() {
                                 placeholder="Rechercher un poste..."
                                 value={searchTerm}
                                 onChangeText={setSearchTerm}
-                                onSubmitEditing={searchJobs}
+                                onSubmitEditing={loadJobs}
                                 returnKeyType="search"
                             />
                         </View>
@@ -230,19 +329,20 @@ export default function JobListScreen() {
                                 placeholder="Lieu"
                                 value={location}
                                 onChangeText={setLocation}
-                                onSubmitEditing={searchJobs}
+                                onSubmitEditing={loadJobs}
                                 returnKeyType="search"
                             />
                         </View>
 
                         <TouchableOpacity
                             style={styles.searchButton}
-                            onPress={searchJobs}
+                            onPress={loadJobs}
                         >
                             <Text style={styles.searchButtonText}>Rechercher</Text>
                         </TouchableOpacity>
                     </View>
 
+                    {/* Content */}
                     {loading ? (
                         <View style={styles.centerContent}>
                             <ActivityIndicator size="large" color="#4c51c6" />
@@ -262,9 +362,24 @@ export default function JobListScreen() {
                             <Text style={styles.noResultsText}>Aucune offre trouvée</Text>
                         </View>
                     ) : (
-                        <View style={styles.jobList}>
-                            {jobs.map(job => (
-                                <JobCard key={job.id} job={job} />
+                        <View style={styles.categoriesContainer}>
+                            {Object.entries(groupedJobs).map(([category, categoryJobs]) => (
+                                <CategorySection
+                                    key={category}
+                                    category={category}
+                                    jobs={categoryJobs}
+                                    isExpanded={expandedCategories.includes(category)}
+                                    onToggle={() => {
+                                        setExpandedCategories(prev =>
+                                            prev.includes(category)
+                                                ? prev.filter(c => c !== category)
+                                                : [...prev, category]
+                                        );
+                                    }}
+                                    selectedJobId={selectedJobId}
+                                    onJobSelect={setSelectedJobId}
+                                    onJobApply={handleOpenJob}
+                                />
                             ))}
                         </View>
                     )}
@@ -475,5 +590,89 @@ export const styles = StyleSheet.create({
         color: '#6B7280',
         fontSize: 16,
         textAlign: 'center',
+    },
+    dropZone: {
+        margin: 16,
+        padding: 24,
+        borderWidth: 2,
+        borderColor: '#E5E7EB',
+        borderStyle: 'dashed',
+        borderRadius: 12,
+        backgroundColor: '#F9FAFB',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dropZoneText: {
+        fontSize: 16,
+        color: '#4B5563',
+        marginTop: 12,
+        textAlign: 'center',
+    },
+    dropZoneSubText: {
+        fontSize: 14,
+        color: '#6B7280',
+        marginTop: 4,
+    },
+    uploadingIndicator: {
+        marginTop: 12,
+    },
+    categorySection: {
+        marginBottom: 16,
+    },
+    categoryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+        padding: 16,
+        borderRadius: 8,
+    },
+    categoryTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1F2937',
+        flex: 1,
+    },
+    categoryCount: {
+        backgroundColor: '#E5E7EB',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginRight: 8,
+    },
+    categoryCountText: {
+        fontSize: 14,
+        color: '#4B5563',
+        fontWeight: '500',
+    },
+    categoriesContainer: {
+        padding: 16,
+    },
+    skillsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 12,
+    },
+    skillBadge: {
+        backgroundColor: '#F3F4F6',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    skillText: {
+        color: '#4B5563',
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    remoteBadge: {
+        backgroundColor: '#DEF7EC',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    remoteText: {
+        color: '#057A55',
+        fontSize: 12,
+        fontWeight: '500',
     }
 });

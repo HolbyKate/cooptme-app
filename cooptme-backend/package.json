@@ -5,8 +5,8 @@
     "build": "tsc",
     "start": "node dist/index.ts",
     "dev": "ts-node src/index.ts",
-    "import-profiles": "ts-node scripts/import-profiles.ts",
-    "import-contacts": "ts-node scripts/import-contacts.ts"
+    "import-data": "ts-node scripts/import-data.ts",
+    "seed": "ts-node prisma/seed.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

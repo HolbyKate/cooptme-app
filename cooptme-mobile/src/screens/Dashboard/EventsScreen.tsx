@@ -14,6 +14,7 @@ import { Calendar, MapPin, Clock } from "lucide-react-native";
 import { useNavigation } from '@react-navigation/native';
 import { eventService as EventService } from '../../api/services/events/event.service';
 import { EventDTO } from '../../types/index';
+import { EventList } from '../../components/EventList';
 import { Linking } from "react-native";
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -40,6 +41,7 @@ export default function EventsScreen() {
   const [events, setEvents] = useState<EventDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
 
   const loadEvents = async () => {
     try {

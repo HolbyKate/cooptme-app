@@ -74,12 +74,18 @@
       [
         "expo-notifications",
         {
-          "icon": "./local/path/to/your/notification-icon.png",
-          "color": "#ffffff",
-          "sounds": ["./local/path/to/your/notification-sound.wav"]
+          "icon": "./assets/notification-icon.png",
+          "color": "#4247BD"
         }
       ]
     ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#4247BD",
+      "androidMode": "default",
+      "androidCollapsedTitle": "CooptMe",
+      "iosDisplayInForeground": true
+    },
     "scheme": "exp",
     "extra": {
       "eas": {

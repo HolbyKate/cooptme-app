@@ -1,4 +1,4 @@
-import api from '../../config/axios';
+import api, { jobsApi } from '../../config/axios';
 import type { JobOffer, JobSearchParams } from '../../../types/index';
 
 class JobService {
@@ -8,25 +8,16 @@ class JobService {
             if (searchParams?.term) queryParams.append('term', searchParams.term);
             if (searchParams?.location) queryParams.append('location', searchParams.location);
 
-            const response = await api.get<JobOffer[]>(`/jobs?${queryParams}`);
+            const response = await jobsApi.get<JobOffer[]>(`/jobs?${queryParams}`);
             return response.data;
         } catch (error: any) {
             throw new Error(error.message || 'Erreur lors de la récupération des offres');
         }
     }
 
-    async getJobById(id: string): Promise<JobOffer> {
-        try {
-            const response = await api.get<JobOffer>(`/jobs/${id}`);
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.message || 'Erreur lors de la récupération de l\'offre');
-        }
-    }
-
     async uploadJobsCSV(file: FormData): Promise<{ success: boolean }> {
         try {
-            const response = await api.post('/jobs/upload', file, {
+            const response = await jobsApi.post('/jobs/upload', file, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

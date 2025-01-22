@@ -10,6 +10,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import * as Google from 'expo-auth-session/providers/google';
@@ -22,43 +23,24 @@ import { CommonActions } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-
 export default function LoginScreen({ navigation }: Props) {
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
   // Configuration Google OAuth
-  const [, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
+  const [request, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
     androidClientId: googleConfig.androidClientId,
     iosClientId: googleConfig.iosClientId,
     clientId: googleConfig.expoClientId,
     scopes: ['profile', 'email'],
   });
 
-  const handleEmailLogin = async () => {
-  if (!email || !password) {
-    Alert.alert('Erreur', 'Email et mot de passe sont obligatoires.');
-    return;
-  }
-
-  try {
-    setIsLoading(true);
-    console.log('🔑 Tentative de connexion pour:', email);
-
-    const response = await authService.emailLogin(email, password);
-    console.log('📨 Réponse reçue:', response);
-
-    if (!response.token) {
-      throw new Error('Token manquant dans la réponse');
-    }
-
-    await login(email, password);
-    console.log('✅ Connexion réussie');
-
-    // Utilisez dispatch pour reset la navigation
+  const navigateToDashboard = () => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
@@ -72,18 +54,44 @@ export default function LoginScreen({ navigation }: Props) {
         ]
       })
     );
-  } catch (error: any) {
-      console.error('❌ Erreur détaillée:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+  };
+
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      Alert.alert('Erreur', 'Email et mot de passe sont obligatoires.');
+      return false;
+    }
+    if (!formData.email.includes('@')) {
+      Alert.alert('Erreur', 'Veuillez entrer un email valide.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleEmailLogin = async () => {
+    if (!validateForm()) return;
+
+    try {
+      setIsLoading(true);
+      const response = await authService.emailLogin(formData.email, formData.password);
+
+      if (!response.token) {
+        throw new Error('Token manquant dans la réponse');
+      }
+
+      await login(formData.email, formData.password);
+      navigateToDashboard();
+    } catch (error: any) {
+      console.error('❌ Erreur de connexion:', error);
 
       let errorMessage = 'Impossible de se connecter. Veuillez réessayer.';
+      
       if (error.response?.status === 404) {
-        errorMessage = 'Email non trouvé';
+        errorMessage = 'Email non trouvé.';
       } else if (error.response?.status === 401) {
-        errorMessage = 'Email ou mot de passe incorrect';
+        errorMessage = 'Email ou mot de passe incorrect.';
+      } else if (error.response?.status === 429) {
+        errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
       }
 
       Alert.alert('Erreur de connexion', errorMessage);
@@ -93,131 +101,127 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const handleGoogleLogin = async () => {
-  try {
-    setIsLoading(true);
-    console.log('🔑 Tentative de connexion Google');
-    const result = await promptGoogleAsync();
+    try {
+      setIsLoading(true);
+      const result = await promptGoogleAsync();
 
-    if (result?.type === 'success') {
-      const { authentication } = result;
-      console.log('📱 Token Google obtenu');
-
-      const response = await authService.googleLogin(authentication?.accessToken || '');
-      console.log('📨 Réponse serveur reçue');
-
-      await login(response.email, '');
-      console.log('✅ Connexion Google réussie');
-
-      // Même approche que pour handleEmailLogin
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'MainApp',
-              state: {
-                routes: [{ name: 'Dashboard' }]
-              }
-            }
-          ]
-        })
+      if (result?.type === 'success' && result.authentication?.accessToken) {
+        const response = await authService.googleLogin(result.authentication.accessToken);
+        await login(response.user.email, '');
+        navigateToDashboard();
+      } else if (result?.type === 'cancel') {
+        console.log('Connexion Google annulée par l\'utilisateur');
+      }
+    } catch (error: any) {
+      console.error('❌ Erreur Google Login:', error);
+      Alert.alert(
+        'Erreur de connexion',
+        'Impossible de se connecter avec Google. Veuillez réessayer.'
       );
-    }
-  } catch (error: any) {
-      console.error('❌ Erreur Google Login:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      Alert.alert('Erreur', 'Impossible de se connecter avec Google');
     } finally {
       setIsLoading(false);
     }
   };
-  const handleRegisterPress = () => {
-  console.log('Navigating to Register...');
-  try {
-    navigation.navigate('Register');
-} catch (error) {
-    console.error('Erreur de navigation :', error);
-  }
-};
-
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4247BD" />
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <Image
-        source={require('../../../assets/logo_transparent.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#999"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <View style={styles.passwordContainer}>
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="Mot de passe"
-          placeholderTextColor="#999"
-          secureTextEntry={!showPassword}
-          value={password}
-          onChangeText={setPassword}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Image
+          source={require('../../../assets/logo_transparent.png')}
+          style={styles.logo}
+          resizeMode="contain"
         />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#999"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={formData.email}
+          onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
+          testID="email-input"
+        />
+
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Mot de passe"
+            placeholderTextColor="#999"
+            secureTextEntry={!showPassword}
+            value={formData.password}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
+            testID="password-input"
+          />
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword(!showPassword)}
+            testID="toggle-password-visibility"
+          >
+            {showPassword ? (
+              <EyeOff size={24} color="#999" />
+            ) : (
+              <Eye size={24} color="#999" />
+            )}
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity
-          style={styles.eyeButton}
-          onPress={() => setShowPassword(!showPassword)}
+          style={styles.loginButton}
+          onPress={handleEmailLogin}
+          testID="login-button"
         >
-          {showPassword ? (
-            <EyeOff size={24} color="#999" />
-          ) : (
-            <Eye size={24} color="#999" />
-          )}
+          <Text style={styles.loginButtonText}>Se connecter</Text>
         </TouchableOpacity>
-      </View>
 
-      <TouchableOpacity style={styles.loginButton} onPress={handleEmailLogin}>
-        <Text style={styles.loginButtonText}>Se connecter</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.googleButton}
+          onPress={handleGoogleLogin}
+          testID="google-login-button"
+        >
+          <Text style={styles.googleButtonText}>Se connecter avec Google</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-        <Text style={styles.googleButtonText}>Se connecter avec Google</Text>
-      </TouchableOpacity>
-
-      <View style={styles.registerContainer}>
-    <Text style={styles.registerText}>Vous n'avez pas de compte ?</Text>
-    <TouchableOpacity onPress={handleRegisterPress}>
-        <Text style={styles.registerLink}>Créer un compte</Text>
-    </TouchableOpacity>
-</View>
-    </KeyboardAvoidingView>
+        <View style={styles.registerContainer}>
+          <Text style={styles.registerText}>Vous n'avez pas de compte ?</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Register')}
+            testID="register-link"
+          >
+            <Text style={styles.registerLink}>Créer un compte</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#4247BD',
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#4247BD',
   },
   logo: {

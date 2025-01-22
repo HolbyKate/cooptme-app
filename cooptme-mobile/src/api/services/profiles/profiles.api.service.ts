@@ -1,3 +1,4 @@
+import { Profile } from '@/types';
 import axiosInstance from '../../config/axios';
 
 class ProfilesApiService {
@@ -21,6 +22,15 @@ class ProfilesApiService {
             return response.data;
         } catch (error) {
             console.error('❌ Erreur lors de la récupération des profils par catégorie:', error);
+            throw error;
+        }
+    }
+    async saveProfile(profile: Profile) {
+        try {
+            const response = await axiosInstance.post('/profiles', profile);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Erreur lors de la sauvegarde du profil:', error);
             throw error;
         }
     }

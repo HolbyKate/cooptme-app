@@ -7,42 +7,64 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Role {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  users User[]  @relation("RoleToUser")
+}
+
 model User {
   id              String    @id @default(uuid())
   email           String    @unique
-  password        String?
-  firstName       String?
-  lastName        String?
+  password        String
+  firstName       String
+  lastName        String
   provider        String?   // "email" ou "google"
   providerId      String?   // ID externe pour l'auth sociale
   photoUrl        String?
   emailVerified   Boolean   @default(false)
-  roleId          String?   // Référence au rôle de l'utilisateur
+  roleId          Int?      // Référence au rôle
+  role            Role?     @relation("RoleToUser", fields: [roleId], references: [id])
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  lastLoginAt     DateTime?
-  resetPasswordToken     String?
-  resetPasswordExpires   DateTime?
 }
 
 model Profile {
   id        String   @id @default(uuid())
   firstName String
   lastName  String
-  url       String  @unique
+  url       String   @unique
   company   String
   job       String
-  category  String
-  meetAt    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Contact {
-  id        Int    @id @default(autoincrement())
+  id        String   @id @default(uuid())
   firstName String
   lastName  String
-  url       String
+  url       String   @unique
   company   String
   job       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([firstName, lastName]) // Contrainte unique composite
+}
+
+model JobOffer {
+  id           Int      @id @default(autoincrement())
+  title        String
+  company      String
+  location     String
+  contractType String
+  salary       String
+  experience   String
+  description  String
+  profile      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([title, company])
 }

@@ -12,7 +12,6 @@ import {
 import { Overlay } from "../../screens/Scanner/Overlay";
 import { profilesApiService } from '../../api/services/profiles/profiles.api.service';
 import { CategoryTitle } from '../../types/index';
-import { LinkedInBrowser } from "../../components/LinkedInBrowser";
 import { Gender, LinkedInProfile } from '../../types/index';
 
 type Props = {

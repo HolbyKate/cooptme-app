@@ -12,8 +12,16 @@ export type User = {
 };
 
 export interface AuthResponse {
-  token: string;
-  email: string;
+    token: string;
+    user: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        roleId?: string;
+        photoUrl?: string;
+        emailVerified: boolean;
+    };
 }
 
 export interface RegisterData {
@@ -41,15 +49,22 @@ export interface JobOffer {
     company: string;
     location: string;
     description: string;
-    contractType: string;
     salary?: string;
+    contractType: string;
     postedDate: string;
+    category: string;
+    skills: string[];
+    experienceLevel: string;
+    remote: boolean;
     url?: string;
 }
-
 export interface JobSearchParams {
     term?: string;
     location?: string;
+    category?: string;
+    skills?: string[];
+    experienceLevel?: string;
+    remote?: boolean;
 }
 
 // Contact types
@@ -77,6 +92,24 @@ export interface Contact {
     photoId: number;
 }
 
+export interface Profile {
+    id: string;
+    firstName: string;
+    lastName: string;
+    url: string;
+    company: string;
+    job: string;
+    category: string;
+    meetAt?: string;
+}
+
+export type CategoryCard = {
+    id: string;
+    title: string;
+    icon: any;
+    color: string;
+};
+
 // Event types
 export interface EventDTO {
     id: string;
@@ -85,10 +118,28 @@ export interface EventDTO {
     date: string;
     time?: string;
     location: string;
-    organizer?: string;
     type: 'job_fair' | 'conference' | 'meetup' | 'school' | 'other';
-    source: string;
     url?: string;
+    source: string;
+    organizer?: string;
+}
+
+export interface Event extends EventDTO {
+    id: string;
+    title: string;
+    description: string;
+    date: string;
+    time?: string;
+    location: string;
+    type: 'job_fair' | 'conference' | 'meetup' | 'school' | 'other';
+    url?: string;
+    source: string;
+    organizer?: string;
+}
+
+export interface EventListProps {
+    events: Event[];
+    onEventPress: (event: Event) => void;
 }
 
 // Environment types
@@ -99,20 +150,6 @@ export interface Environment {
     AUTH0_CLIENT_ID: string;
     DATABASE_URL: string;
 }
-
-export type LinkedInProfile = {
-    id?: string;
-    firstName: string;
-    lastName: string;
-    profileUrl: string;
-    company?: string;
-    title?: string;
-    location?: string;
-    category?: string;
-    gender?: string;
-    photoId?: string | null;
-    scannedAt?: string;
-};
 
 export type SocialLoginData = {
     provider: 'google' | 'linkedin';
