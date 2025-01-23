@@ -1,4 +1,3 @@
-// components/CustomDrawer.tsx
 import React from 'react';
 import {
     View,
@@ -8,6 +7,7 @@ import {
     Platform,
     Image,
     ScrollView,
+    Alert,
 } from 'react-native';
 import {
     Home,
@@ -20,8 +20,11 @@ import {
 } from 'lucide-react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function CustomDrawer(props: any) {
+    const { signOut } = useAuth(); // Utilisation du contexte d'authentification
+
     const menuItems = [
         {
             icon: Home,
@@ -49,6 +52,27 @@ export default function CustomDrawer(props: any) {
         props.navigation.navigate(screenName);
     };
 
+    const handleLogout = () => {
+        Alert.alert(
+            'Déconnexion',
+            'Êtes-vous sûr de vouloir vous déconnecter ?',
+            [
+                {
+                    text: 'Annuler',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Déconnecter',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await signOut(); // Nettoie les données utilisateur via AuthContext
+                        props.navigation.navigate('Home'); // Redirige vers l'écran Home
+                    },
+                },
+            ]
+        );
+    };
+
     return (
         <LinearGradient
             colors={['#4247BD', '#4c51c6']}
@@ -60,6 +84,7 @@ export default function CustomDrawer(props: any) {
                 {...props}
                 contentContainerStyle={styles.drawerContent}
             >
+                {/* En-tête avec le logo */}
                 <View style={styles.header}>
                     <Image
                         source={require('../../assets/logo_transparent.png')}
@@ -68,6 +93,7 @@ export default function CustomDrawer(props: any) {
                     />
                 </View>
 
+                {/* Menu */}
                 <ScrollView style={styles.menuContainer}>
                     {menuItems.map((item, index) => (
                         <TouchableOpacity
@@ -83,7 +109,11 @@ export default function CustomDrawer(props: any) {
                     ))}
                 </ScrollView>
 
-                <TouchableOpacity style={styles.logoutButton}>
+                {/* Bouton de déconnexion */}
+                <TouchableOpacity
+                    style={styles.logoutButton}
+                    onPress={handleLogout}
+                >
                     <View style={styles.iconContainer}>
                         <LogOut color="#fef9f9" size={24} strokeWidth={1.5} />
                     </View>

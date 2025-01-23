@@ -1,42 +1,41 @@
-export interface User {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  auth0Id?: string;
-}
+import type { NavigatorScreenParams } from '@react-navigation/native';
 
-export interface AuthResponse {
-  success: boolean;
-  token?: string;
-  user?: User;
-  error?: string;
-}
+// Bottom Tabs (navigation principale du bas)
+export type BottomTabParamList = {
+  Dashboard: undefined;
+  MyAccount: undefined;
+  Calendar: { selectedDate?: string };
+  Chat: undefined;
+  Scan: undefined;
+};
 
-export interface UserData {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-}
+// Drawer (menu latéral)
+export type DrawerParamList = {
+  BottomTabs: NavigatorScreenParams<BottomTabParamList>;
+  MyAccount: undefined;
+  Settings: undefined;
+  Help: undefined;
+  Logout: undefined;
+};
 
-export interface DecodedToken {
-  sub: string;
-  email: string;
-  exp: number;
-}
+// Root Stack (navigation globale avec modales)
+export type RootStackParamList = {
+  // Auth Stack
+  Home: undefined;
+  Login: undefined;
+  Register: undefined;
 
-export interface ValidationErrors {
-  email?: string;
-  password?: string;
-  firstName?: string;
-  lastName?: string;
-}
+  // Main Stack (Drawer)
+  DrawerRoot: NavigatorScreenParams<DrawerParamList>;
 
-export interface SocialAuthCredential {
-  token: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  provider: 'google' | 'apple' | 'auth0';
-}
+  // Modals (écrans accessibles depuis n'importe où)
+  Dashboard: undefined;
+  Contacts: undefined;
+  Profiles: undefined;
+  Events: undefined;
+  Calendar: undefined;
+  Job: undefined;
+  Chat: undefined;
+  ChatConversation: { chatId: string };
+  Scan: undefined;
+};

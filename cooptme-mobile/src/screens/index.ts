@@ -11,6 +11,4 @@ export { default as ScanScreen } from './Scanner/ScanScreen';
 export { default as MyAccountScreen } from './User/MyAccountScreen';
 export { default as BottomTabNavigator } from '../navigation/BottomTabNavigator';
 export { default as DrawerNavigator } from '../navigation/DrawerNavigator';
-export { default as StackNavigator } from '../navigation/StackNavigator';
-export { default as MainAppScreen } from './MainAppScreen';
 

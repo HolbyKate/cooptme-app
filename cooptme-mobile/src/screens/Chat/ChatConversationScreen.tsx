@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { ArrowLeft, Send } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/navigation';
+import { RootStackParamList } from '../../navigation/types';
 
 
 type Message = {
@@ -91,7 +91,7 @@ export default function ChatConversationScreen({ navigation, route }: ChatConver
         >
           <ArrowLeft color="#4247BD" size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{route.params.name}</Text>
+        <Text style={styles.headerTitle}>{route.params.chatId}</Text>
         <View style={styles.placeholder} />
       </View>
 

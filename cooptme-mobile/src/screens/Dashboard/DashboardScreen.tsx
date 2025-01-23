@@ -1,4 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
+// Ecran principal
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,15 +7,12 @@ import {
   Animated,
   Alert,
   StyleSheet,
-  FlatList,
-  Image
 } from 'react-native';
 import {
   Bell,
   Menu,
   UsersRound,
   UserRound,
-  ScanLine,
   PartyPopper,
   Briefcase,
   MessageCircle,
@@ -23,50 +21,38 @@ import {
 } from 'lucide-react-native';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
-import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
-import Papa from 'papaparse';
-
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type {
-  MainTabParamList,
-  DrawerParamList,
-  RootStackParamList
-} from '../../navigation/navigation';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import ContactsScreen from '../../screens/Dashboard/ContactsScreen';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { BottomTabParamList, DrawerParamList, RootStackParamList } from '../../navigation/types';
 
-
-/** Navigation Types **/
 type DashboardScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Dashboard'>,
+  BottomTabNavigationProp<BottomTabParamList, 'Dashboard'>,
   CompositeNavigationProp<
     DrawerNavigationProp<DrawerParamList>,
     NativeStackNavigationProp<RootStackParamList>
   >
 >;
 
+type ModalScreens = Extract<keyof RootStackParamList, 'Contacts' | 'Profiles' | 'Events' | 'Calendar' | 'Job' | 'Chat' | 'Scan'>;
+
 type NavigationDestination = {
   id: number;
   title: string;
-  screenName: keyof (MainTabParamList & RootStackParamList);
+  screenName: ModalScreens;
   icon: typeof UsersRound;
-  params?: Record<string, unknown>;
 };
 
-/** Navigation Menu Items **/
 const cardItems: NavigationDestination[] = [
-    { id: 1, title: 'Contacts', screenName: 'Contacts', icon: UsersRound },
-    { id: 2, title: 'Profils', screenName: 'Profiles', icon: UserRound },
-    { id: 3, title: 'Événements', screenName: 'Events', icon: PartyPopper },
-    { id: 4, title: 'Calendrier', screenName: 'Calendar', icon: CalendarDays },
-    { id: 5, title: 'Emplois', screenName: 'Job', icon: Briefcase },
-    { id: 6, title: 'Chat', screenName: 'ChatConversation', icon: MessageCircle },
+  { id: 1, title: 'Contacts', screenName: 'Contacts', icon: UsersRound },
+  { id: 2, title: 'Profils', screenName: 'Profiles', icon: UserRound },
+  { id: 3, title: 'Événements', screenName: 'Events', icon: PartyPopper },
+  { id: 4, title: 'Calendrier', screenName: 'Calendar', icon: CalendarDays },
+  { id: 5, title: 'Emplois', screenName: 'Job', icon: Briefcase },
+  { id: 6, title: 'Chat', screenName: 'Chat', icon: MessageCircle },
 ];
 
-/** Dashboard Screen **/
 export default function DashboardScreen() {
   const navigation = useNavigation<DashboardScreenNavigationProp>();
   const userName = 'Cathy';
@@ -91,38 +77,27 @@ export default function DashboardScreen() {
     return () => animation.stop();
   }, []);
 
-  const handleNavigation = (destination: NavigationDestination | 'Scan') => {
+  const handleNavigation = (destination: NavigationDestination) => {
     try {
-        if (typeof destination === 'string' && destination === 'Scan') {
-            navigation.getParent()?.navigate('Scan');
-            return;
-        }
-
-        if (!destination?.screenName) {
-            throw new Error('Destination invalide');
-        }
-
-        navigation.getParent()?.navigate(destination.screenName);
+      navigation.navigate(destination.screenName as never);
     } catch (error) {
-        console.error('Erreur de navigation:', error);
-        Alert.alert('Erreur', 'Navigation impossible');
+      console.error('Erreur de navigation:', error);
+      Alert.alert('Erreur', 'Navigation impossible');
     }
-};
-
-  const rightContent = (
-    <TouchableOpacity
-      onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-    >
-      <Menu color="#FFFFFF" size={24} />
-    </TouchableOpacity>
-  );
+  };
 
   return (
     <ScreenWrapper
       headerProps={{
         title: 'Dashboard',
-        rightContent: rightContent
+        rightContent: (
+          <TouchableOpacity
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Menu color="#FFFFFF" size={24} />
+          </TouchableOpacity>
+        )
       }}
     >
       <View style={styles.container}>
@@ -130,7 +105,7 @@ export default function DashboardScreen() {
           <Text style={styles.welcomeText}>Bonjour {userName},</Text>
           <TouchableOpacity
             style={styles.scanButton}
-            onPress={() => handleNavigation('Scan')}
+            onPress={() => navigation.navigate('Scan' as never)}
           >
             <QrCode color="#FFFFFF" size={24} />
           </TouchableOpacity>
@@ -163,7 +138,7 @@ export default function DashboardScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.iconContainer}>
-                <item.icon color="#4247BD" size={32} />
+                <item.icon color="#FF8F66" size={24} />
               </View>
               <Text style={styles.menuItemText}>{item.title}</Text>
             </TouchableOpacity>

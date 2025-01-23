@@ -3,38 +3,22 @@ import {
   StyleSheet,
   View,
   Text,
+  Image,
   TouchableOpacity,
   FlatList,
   SafeAreaView,
   RefreshControl,
   ActivityIndicator,
-  Alert,
 } from "react-native";
-import { Calendar, MapPin, Clock } from "lucide-react-native";
-import { useNavigation } from '@react-navigation/native';
-import { eventService as EventService } from '../../api/services/events/event.service';
-import { EventDTO } from '../../types/index';
-import { EventList } from '../../components/EventList';
+import { Menu, Calendar, MapPin, Clock } from "lucide-react-native";
+import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { EventService, EventDTO } from "../../api/services/events/event.service";
 import { Linking } from "react-native";
-import type { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MainTabParamList, RootStackParamList } from '../../navigation/navigation';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SharedHeader } from '../../components/SharedHeader';
+import { RootStackParamList } from '../../types/index';
 
-type EventsScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Events'>,
-  NativeStackNavigationProp<RootStackParamList>
->;
-
-const eventTypeLabels = {
-  job_fair: "🎯 Salon Emploi",
-  conference: "🎤 Conférence",
-  meetup: "👥 Meetup",
-  school: "🎓 Ecole",
-  other: "📅 Événement"
-} as const;
+// Définir le type de navigation pour le tiroir
+type EventsScreenNavigationProp = DrawerNavigationProp<RootStackParamList, 'Events'>;
 
 export default function EventsScreen() {
   const navigation = useNavigation<EventsScreenNavigationProp>();
@@ -42,6 +26,9 @@ export default function EventsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const handleMenuPress = () => {
+    navigation.dispatch(DrawerActions.openDrawer());
+  };
 
   const loadEvents = async () => {
     try {
@@ -70,67 +57,6 @@ export default function EventsScreen() {
     loadEvents();
   }, []);
 
-  const addToCalendar = async (event: EventDTO) => {
-  try {
-    const eventDate = new Date(event.date);
-    const formattedDate = eventDate.toISOString().split('T')[0];
-    const STORAGE_KEY = 'calendar_events';
-
-    const storedEvents = await AsyncStorage.getItem(STORAGE_KEY);
-    let existingEvents = storedEvents ? JSON.parse(storedEvents) : {};
-
-    let [startHour, endHour] = event.time ? event.time.split('-').map(t => t.trim()) : ['09:00', '10:00'];
-
-    const calendarEvent = {
-      id: `${event.id}_${Date.now()}`,
-      title: event.title,
-      description: event.description,
-      date: formattedDate,
-      startTime: `${formattedDate}T${startHour}:00.000Z`,
-      endTime: `${formattedDate}T${endHour}:00.000Z`,
-      categoryId: '2',
-      notificationId: null
-    };
-
-    if (!existingEvents[formattedDate]) {
-      existingEvents[formattedDate] = [];
-    }
-
-    // Check for duplicate events
-    const isDuplicate = existingEvents[formattedDate].some(
-      (existing: any) => existing.id.startsWith(event.id)
-    );
-
-    if (isDuplicate) {
-      Alert.alert(
-        'Attention',
-        'Cet événement existe déjà dans votre calendrier',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    existingEvents[formattedDate].push(calendarEvent);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(existingEvents));
-
-    // Navigate to Calendar tab through the bottom tab navigation
-    navigation.getParent()?.navigate('Calendar', { selectedDate: formattedDate });
-
-    Alert.alert(
-      'Succès',
-      'Événement ajouté au calendrier',
-      [{ text: 'OK' }]
-    );
-  } catch (error) {
-    console.error('Erreur lors de l\'ajout au calendrier:', error);
-    Alert.alert(
-      'Erreur',
-      'Impossible d\'ajouter l\'événement au calendrier. Veuillez réessayer.',
-      [{ text: 'OK' }]
-    );
-  }
-};
-
   const renderEventCard = ({ item }: { item: EventDTO }) => (
     <TouchableOpacity
       style={styles.eventCard}
@@ -139,7 +65,13 @@ export default function EventsScreen() {
       <View style={styles.eventHeader}>
         <Text style={styles.eventSource}>{item.source}</Text>
         <Text style={styles.eventType}>
-          {eventTypeLabels[item.type] || eventTypeLabels.other}
+          {item.type === "job_fair"
+            ? "🎯 Salon Emploi"
+            : item.type === "conference"
+              ? "🎤 Conférence"
+              : item.type === "meetup"
+                ? "👥 Meetup"
+                : "📅 Événement"}
         </Text>
       </View>
 
@@ -174,38 +106,34 @@ export default function EventsScreen() {
         <Text style={styles.organizer}>Organisé par: {item.organizer}</Text>
       )}
 
-      <View style={styles.descriptionContainer}>
-        <Text style={styles.eventDescription} numberOfLines={3}>
-          {item.description}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.addToCalendarButton}
-        onPress={(e) => {
-          e.stopPropagation();
-          addToCalendar(item);
-        }}
-      >
-        <Calendar size={20} color="#FFFFFF" />
-      </TouchableOpacity>
+      <Text style={styles.eventDescription} numberOfLines={3}>
+        {item.description}
+      </Text>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <SharedHeader title="Événements" />
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#4247BD" />
-        </View>
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4247BD" />
+      </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <SharedHeader title="Événements" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
+          <Menu color="#FFFFFF" size={24} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Événements</Text>
+        <Image
+          source={require("../../../assets/logo_blue.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       <View style={styles.content}>
         <FlatList
           data={events}
@@ -234,29 +162,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
-  content: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#4c51c6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  menuButton: {
+    padding: 8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
     flex: 1,
   },
-  centerContent: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  logo: {
+    width: 100,
+    height: 40,
   },
   listContainer: {
-    padding: 20,
+    paddingBottom: 20,
   },
   eventCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    paddingBottom: 70,
     marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
-    position: 'relative',
   },
   eventHeader: {
     flexDirection: "row",
@@ -265,13 +211,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   eventType: {
+    fontFamily: "Quicksand-Bold",
     fontSize: 14,
-    fontWeight: 'bold',
     color: "#4247BD",
   },
   eventTitle: {
+    fontFamily: "Quicksand-Bold",
     fontSize: 18,
-    fontWeight: 'bold',
     color: "#333",
     marginBottom: 12,
   },
@@ -281,52 +227,46 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 2,
+    marginBottom: 8,
   },
   detailText: {
+    fontFamily: "Quicksand-Regular",
     fontSize: 14,
     color: "#666",
     marginLeft: 8,
   },
-  descriptionContainer: {
-    marginBottom: 5,
-  },
   eventDescription: {
+    fontFamily: "Quicksand-Regular",
     fontSize: 14,
     color: "#666",
     lineHeight: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   eventSource: {
+    fontFamily: "Quicksand-Regular",
     fontSize: 12,
     color: "#666",
+    marginBottom: 4,
   },
   organizer: {
+    fontFamily: "Quicksand-Regular",
     fontSize: 12,
     color: "#666",
-    marginBottom: 8,
+    marginTop: 8,
   },
   emptyText: {
+    fontFamily: "Quicksand-Regular",
     fontSize: 16,
     color: "#666",
     textAlign: "center",
+    marginTop: 40,
   },
-  addToCalendarButton: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    backgroundColor: '#FF8F66',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
 });

@@ -14,7 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from 'expo-linear-gradient';
 import { SharedHeader } from '../../components/SharedHeader';
-import { RootStackParamList } from '../../navigation/navigation';
+import { RootStackParamList } from '../../navigation/types';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -63,7 +63,6 @@ export default function ChatScreen() {
       onPress={() =>
         navigation.navigate("ChatConversation", {
           chatId: item.id,
-          name: item.name,
         })
       }
     >

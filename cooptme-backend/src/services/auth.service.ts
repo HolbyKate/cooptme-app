@@ -1,8 +1,8 @@
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import type { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import axios from 'axios';
 
 // Types
 interface RegisterData {

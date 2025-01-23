@@ -29,6 +29,18 @@ model User {
   updatedAt       DateTime  @updatedAt
 }
 
+model New Profile {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  url       String
+  company   String
+  job       String
+  event     String
+  eventDate DateTime
+  createdAt DateTime @default(now())
+}
+
 model Profile {
   id        String   @id @default(uuid())
   firstName String

@@ -8,11 +8,9 @@ import {
   StyleSheet,
   Alert,
   Text,
+  Linking
 } from "react-native";
-import { Overlay } from "../../screens/Scanner/Overlay";
-import { profilesApiService } from '../../api/services/profiles/profiles.api.service';
-import { CategoryTitle } from '../../types/index';
-import { Gender, LinkedInProfile } from '../../types/index';
+import { Overlay } from "./Overlay";
 
 type Props = {
   navigation: any;
@@ -21,8 +19,6 @@ type Props = {
 export default function ScanScreen({ navigation }: Props) {
   const qrLock = useRef(false);
   const appState = useRef(AppState.currentState);
-  const [isLinkedInBrowserVisible, setLinkedInBrowserVisible] = useState(false);
-  const [profileUrl, setProfileUrl] = useState<string>("");
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -47,73 +43,56 @@ export default function ScanScreen({ navigation }: Props) {
     };
   }, []);
 
-  const handleProfileScraped = async (scrapedProfile: LinkedInProfile) => {
-    try {
-      const completeProfile = {
-        ...scrapedProfile,
-        category: 'À qualifier' as CategoryTitle,
-        photoId: null,
-        gender: 'unknown' as Gender
-      };
+  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
+    console.log("QR Code détecté :", { type, data });
 
-      await profilesApiService.saveProfile(completeProfile);
-      Alert.alert(
-        "Succès",
-        "Le profil a été ajouté avec succès",
-        [
-          {
-            text: "Voir les profils",
-            onPress: () => navigation.navigate('Profiles', { userId: undefined })
-          },
-          {
-            text: "Scanner un autre",
-            onPress: () => {
-              setLinkedInBrowserVisible(false);
-              qrLock.current = false;
-            }
-          }
-        ]
-      );
-    } catch (error: any) {
-      console.error('Erreur lors de la sauvegarde du profil:', error);
-      Alert.alert(
-        "Erreur",
-        error.message || "Impossible d'enregistrer le profil. Veuillez réessayer."
-      );
-      qrLock.current = false;
+    if (data && !qrLock.current) {
+      qrLock.current = true;
+
+      try {
+        if (data.includes("linkedin.com/in/")) {
+          Alert.alert(
+            "Profil LinkedIn détecté",
+            "Voulez-vous ouvrir ce profil ?",
+            [
+              {
+                text: "Annuler",
+                onPress: () => {
+                  qrLock.current = false;
+                },
+                style: "cancel"
+              },
+              {
+                text: "Ouvrir",
+                onPress: async () => {
+                  try {
+                    await Linking.openURL(data);
+                  } catch (error) {
+                    Alert.alert("Erreur", "Impossible d'ouvrir le lien LinkedIn");
+                  } finally {
+                    qrLock.current = false;
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          throw new Error("Ce QR code ne contient pas de profil LinkedIn valide");
+        }
+      } catch (error: any) {
+        console.error("Erreur lors du traitement du QR Code :", error);
+        Alert.alert("Erreur", error.message || "QR Code invalide");
+        qrLock.current = false;
+      }
     }
   };
-
-  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
-  console.log("QR Code détecté :", { type, data });
-  if (data && !qrLock.current) {
-    qrLock.current = true;
-    if (data.includes("linkedin.com/in/") || data.includes("eqrco.de")) {
-      setProfileUrl(data);
-      setLinkedInBrowserVisible(true);
-    } else {
-      Alert.alert(
-        "QR Code invalide",
-        "Ce QR code ne contient pas de profil LinkedIn valide.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              qrLock.current = false;
-            }
-          }
-        ]
-      );
-    }
-  }
-};
 
   if (hasPermission === null) {
     return <Text>Demande d'autorisation de la caméra...</Text>;
   }
 
   if (hasPermission === false) {
-    return <Text>Accès à la caméra refusé.</Text>;
+    return <Text>Accès à la caméra refusé</Text>;
   }
 
   return (
@@ -128,16 +107,6 @@ export default function ScanScreen({ navigation }: Props) {
         onBarcodeScanned={handleBarCodeScanned}
       />
       <Overlay />
-
-      <LinkedInBrowser
-        isVisible={isLinkedInBrowserVisible}
-        profileUrl={profileUrl}
-        onClose={() => {
-          setLinkedInBrowserVisible(false);
-          qrLock.current = false;
-        }}
-        onProfileScraped={handleProfileScraped}
-      />
     </SafeAreaView>
   );
 }

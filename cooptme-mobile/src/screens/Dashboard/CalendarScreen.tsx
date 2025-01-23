@@ -19,11 +19,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { SharedHeader } from '../../components/SharedHeader';
-import { MainTabParamList } from '../../navigation/navigation';
+import { RootStackParamList } from '@/navigation/types';
+
 
 // Type definitions
-type CalendarScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'Calendar'>;
-type CalendarScreenRouteProp = RouteProp<MainTabParamList, 'Calendar'>;
+type CalendarScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Calendar'>;
+type CalendarScreenRouteProp = RouteProp<RootStackParamList, 'Calendar'>;
 
 interface EventCategory {
   id: string;
@@ -98,31 +99,30 @@ export default function CalendarScreen() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
+  let isMounted = true;
+  const handleDateChange = async () => {
+    const newDate = route.params?.selectedDate as string | undefined;
+    if (!newDate || !isMounted) return;
 
-    const handleDateChange = async () => {
-      const newDate = route.params?.selectedDate;
-      if (!newDate || !isMounted) return;
-
-      try {
-        if (newDate !== selectedDate) {
-          setSelectedDate(newDate);
-        }
-
-        if (isMounted) {
-          navigation.setParams({ selectedDate: undefined });
-        }
-      } catch (error) {
-        console.error('Error handling date change:', error);
+    try {
+      if (newDate !== selectedDate) {
+        setSelectedDate(newDate);
       }
-    };
+      if (isMounted) {
+        navigation.setParams(undefined);
+      }
+    } catch (error) {
+      console.error('Error handling date change:', error);
+    }
+  };
 
-    handleDateChange();
+  handleDateChange();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [route.params?.selectedDate, navigation, selectedDate]);
+  return () => {
+    isMounted = false;
+  };
+}, [route.params?.selectedDate, navigation]);
+
 
   const requestNotificationPermissions = async () => {
     const { status } = await Notifications.requestPermissionsAsync();

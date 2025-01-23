@@ -156,4 +156,4 @@ export type SocialLoginData = {
     token: string;
 };
 
-export * from '../navigation/navigation';
+export * from '../navigation/types';

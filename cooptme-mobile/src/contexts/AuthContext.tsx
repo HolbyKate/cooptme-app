@@ -1,113 +1,149 @@
-import React, {
-  createContext,
-  useContext as reactUseContext,
-  useEffect as reactUseEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+// Creation de contexte d'authentifictaion
+import React, { createContext, useContext, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../api/config/axios';
+import { authService } from '../api/services/auth/auth.api.service';
 
 type AuthContextType = {
   signIn: (token: string, email: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (token: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  initializeAuth: () => Promise<void>;
   userToken: string | null;
   userEmail: string | null;
   isLoading: boolean;
-  isAuthenticated: boolean; // Ajout d'un état pour suivre l'authentification
+  isError: string | null;
+  isAuthenticated: boolean;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-export const useAuth = () => {
-  const context = reactUseContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState<string | null>(null);
   const [userToken, setUserToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Initialize authentication state from AsyncStorage
-  reactUseEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const savedToken = await AsyncStorage.getItem('userToken');
-        const savedEmail = await AsyncStorage.getItem('userEmail');
-        if (savedToken) {
-          setUserToken(savedToken);
-          setUserEmail(savedEmail);
-          setIsAuthenticated(true);
-          // Configure axios avec le token
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        // En cas d'erreur, on nettoie tout
-        await signOut();
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const initializeAuth = async () => {
+  try {
+    setIsLoading(true);
+    const [savedToken, savedEmail] = await Promise.all([
+      AsyncStorage.getItem('userToken'),
+      AsyncStorage.getItem('userEmail'),
+    ]);
 
-    initializeAuth();
-  }, []);
+    if (savedToken) {
+      setUserToken(savedToken);
+      setUserEmail(savedEmail);
+      setIsAuthenticated(true);
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+    } else {
+      setUserToken(null);
+      setUserEmail(null);
+      setIsAuthenticated(false);
+    }
+  } catch (error) {
+    console.error('Error initializing auth:', error);
+    await cleanAuth();
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  // Fonction utilitaire pour nettoyer l'état d'authentification
+  const cleanAuth = async (): Promise<void> => {
+  try {
+    await Promise.all([
+      AsyncStorage.removeItem('userToken'),
+      AsyncStorage.removeItem('userEmail'),
+    ]);
+    delete axiosInstance.defaults.headers.common['Authorization'];
+    setUserToken(null);
+    setUserEmail(null);
+    setIsAuthenticated(false);
+  } catch (error) {
+    console.error('Error cleaning auth:', error);
+    throw error;
+  }
+};
+
+  const signIn = React.useCallback(async (token: string, email: string) => {
+  try {
+    setIsError(null);
+    if (!token || !email) throw new Error('Token ou email manquant');
+
+    await Promise.all([
+      AsyncStorage.setItem('userToken', token),
+      AsyncStorage.setItem('userEmail', email),
+    ]);
+
+    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setUserToken(token);
+    setUserEmail(email);
+    setIsAuthenticated(true);
+  } catch (error) {
+    console.error('Error during sign-in:', error);
+    setIsError(error instanceof Error ? error.message : 'Erreur de connexion');
+    throw error;
+  }
+}, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      console.log('Tentative de connexion pour:', email);
-      const response = await axiosInstance.post('/auth/login', { email, password });
+  try {
+    setIsLoading(true);
+    setIsError(null);
+    const response = await authService.emailLogin(email, password);
 
-      if (response.data.token) {
-        await signIn(response.data.token, email);
-      } else {
-        throw new Error('Token non reçu du serveur');
-      }
+    if (!response.token) throw new Error("Aucun token retourné par le serveur");
+
+    await signIn(response.token, email);
+  } catch (error: any) {
+    console.error('Error during login:', error);
+    const errorMessage =
+      error?.response?.data?.message ||
+      error.message ||
+      'Une erreur inconnue est survenue';
+    setIsError(errorMessage);
+    throw new Error(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  const googleLogin = async (token: string) => {
+    try {
+      setIsLoading(true);
+      setIsError(null);
+      const response = await authService.googleLogin(token);
+      await signIn(response.token, response.user.email);
     } catch (error: any) {
-      console.error('Erreur login:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
+      setIsError(error.message || 'Erreur de connexion Google');
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const signIn = async (token: string, email: string) => {
+  const register = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      if (!token || !email) {
-        throw new Error('Token or email is missing');
-      }
-      await AsyncStorage.setItem('userToken', token);
-      await AsyncStorage.setItem('userEmail', email);
-      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUserToken(token);
-      setUserEmail(email);
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error('Error during sign-in:', error);
+      setIsLoading(true);
+      setIsError(null);
+      const response = await authService.register({ email, password, firstName, lastName });
+      await signIn(response.token, email);
+    } catch (error: any) {
+      setIsError(error.message || 'Erreur d\'inscription');
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
-      await AsyncStorage.removeItem('userToken');
-      await AsyncStorage.removeItem('userEmail');
-      delete axiosInstance.defaults.headers.common['Authorization'];
-      setUserToken(null);
-      setUserEmail(null);
-      setIsAuthenticated(false);
+      await cleanAuth();
     } catch (error) {
       console.error('Error during sign-out:', error);
       throw error;
@@ -119,10 +155,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       value={{
         signIn,
         login,
+        googleLogin,
+        register,
         signOut,
+        initializeAuth,
         userToken,
         userEmail,
         isLoading,
+        isError,
         isAuthenticated,
       }}
     >
@@ -130,3 +170,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

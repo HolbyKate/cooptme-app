@@ -14,7 +14,7 @@ import {
   Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/navigation';
+import { RootStackParamList } from '../../types/index';
 import { SharedHeader } from '../../components/SharedHeader';
 import {
   Code2,
@@ -55,6 +55,7 @@ type CategoryCard = {
 };
 
 const categories: CategoryCard[] = [
+  { id: 'New', title: 'Nouveau', icon: Users2, color: '#2E7D32' },
   { id: 'Tech', title: 'Tech', icon: Code2, color: '#4247BD' },
   { id: 'Creative', title: 'Créatif', icon: Palette, color: '#FF8F66' },
   { id: 'Management', title: 'Management', icon: Users2, color: '#2E7D32' },
