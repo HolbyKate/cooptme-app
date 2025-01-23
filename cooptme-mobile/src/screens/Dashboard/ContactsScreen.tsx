@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     StyleSheet,
     View,
@@ -8,91 +8,146 @@ import {
     ActivityIndicator,
     Alert,
 } from 'react-native';
-import axios from 'axios';
+import { contactsApi } from '../../api/config/axios';
+import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { SharedHeader } from '../../components/SharedHeader';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { RootStackParamList, DrawerParamList } from '../../navigation/types';
 
-type Contact = {
+// Types moved to separate types file
+export type Contact = {
     id: string;
     firstName: string;
     lastName: string;
-    function: string;
-    meetingPlace: string;
-    photo: string | null;
+    company: string;
+    job: string;
+    category: string;
 };
 
+type ContactsScreenNavigationProp = CompositeNavigationProp<
+    DrawerNavigationProp<DrawerParamList>,
+    NativeStackNavigationProp<RootStackParamList>
+>;
+
 export default function ContactsScreen() {
+    const navigation = useNavigation<ContactsScreenNavigationProp>();
     const [contacts, setContacts] = useState<{ title: string; data: Contact[] }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [retryCount, setRetryCount] = useState(0);
 
-    const fetchContacts = async () => {
+    const getCategoryColor = useCallback((category: string): string => {
+        const colors: { [key: string]: string } = {
+            Tech: '#4c51c6',
+            Creative: '#10b981',
+            Management: '#f59e0b',
+            Education: '#3b82f6',
+            Healthcare: '#ef4444',
+            Legal: '#8b5cf6',
+            default: '#6b7280'
+        };
+        return colors[category] || colors.default;
+    }, []);
+
+    const fetchContacts = useCallback(async () => {
         try {
-            const response = await axios.get('/contacts'); // Vérifiez que l'API retourne les contacts
+            const response = await contactsApi.get('/contacts');
             const dbContacts: Contact[] = response.data.data;
 
-            const groupedContacts: { [key: string]: Contact[] } = dbContacts.reduce(
-                (acc, contact) => {
-                    const firstLetter = contact.lastName[0].toUpperCase();
-                    if (!acc[firstLetter]) acc[firstLetter] = [];
-                    acc[firstLetter].push(contact);
-                    return acc;
-                },
-                {} as { [key: string]: Contact[] }
-            );
+            const groupedContacts = dbContacts.reduce((acc, contact) => {
+                const firstLetter = contact.lastName[0].toUpperCase();
+                if (!acc[firstLetter]) acc[firstLetter] = [];
+                acc[firstLetter].push(contact);
+                return acc;
+            }, {} as { [key: string]: Contact[] });
 
             const sections = Object.keys(groupedContacts)
                 .sort()
-                .map((letter) => ({
+                .map(letter => ({
                     title: letter,
-                    data: groupedContacts[letter].sort((a, b) => a.lastName.localeCompare(b.lastName)),
+                    data: groupedContacts[letter].sort((a, b) =>
+                        a.lastName.localeCompare(b.lastName)
+                    ),
                 }));
 
             setContacts(sections);
-        } catch (error) {
-            Alert.alert('Erreur', 'Impossible de récupérer les contacts.');
-            console.error(error);
-        } finally {
             setIsLoading(false);
+        } catch (error: any) {
+            console.error('Erreur fetchContacts:', error);
+            if (retryCount < 3) {
+                setTimeout(() => {
+                    setRetryCount(prev => prev + 1);
+                    fetchContacts();
+                }, 2000 * (retryCount + 1));
+            } else {
+                const errorMessage = error.response?.data?.message || 'Impossible de récupérer les contacts.';
+                Alert.alert('Erreur', errorMessage);
+                setIsLoading(false);
+            }
         }
-    };
+    }, [retryCount]);
 
     useEffect(() => {
         fetchContacts();
-    }, []);
+    }, [fetchContacts]);
 
-    const renderContact = ({ item }: { item: Contact }) => (
-        <TouchableOpacity style={styles.contactCard} activeOpacity={0.7}>
-            <View style={styles.contactInfo}>
-                <Text style={styles.name}>
-                    {item.firstName} {item.lastName}
+    const renderContactCard = useCallback(({ item }: { item: Contact }) => (
+        <TouchableOpacity
+            style={styles.ContactCard}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('ContactDetail', { contact: item })}
+        >
+            <View style={[styles.avatar, { backgroundColor: getCategoryColor(item.category) }]}>
+                <Text style={styles.initials}>
+                    {`${item.firstName[0]}${item.lastName[0]}`}
                 </Text>
-                <Text style={styles.function}>{item.function}</Text>
-                <Text style={styles.meetingPlace}>{item.meetingPlace}</Text>
+            </View>
+            <View style={styles.content}>
+                <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
+                <Text style={styles.details}>{item.job} • {item.company}</Text>
+                <View style={[styles.tag, { backgroundColor: `${getCategoryColor(item.category)}20` }]}>
+                    <Text style={[styles.tagText, { color: getCategoryColor(item.category) }]}>
+                        {item.category}
+                    </Text>
+                </View>
             </View>
         </TouchableOpacity>
-    );
+    ), [getCategoryColor, navigation]);
 
-    if (isLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4247BD" />
-            </View>
-        );
-    }
+    const renderSectionHeader = useCallback(({ section: { title } }: { section: { title: string } }) => (
+        <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+    ), []);
 
     return (
-        <View style={styles.container}>
-            <SectionList
-                sections={contacts}
-                keyExtractor={(item) => item.id}
-                renderItem={renderContact}
-                renderSectionHeader={({ section: { title } }) => (
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>{title}</Text>
-                    </View>
-                )}
-                contentContainerStyle={styles.listContainer}
-                showsVerticalScrollIndicator={false}
+        <SafeAreaView style={styles.container}>
+            <SharedHeader
+                title="Contacts"
+                showBackButton={true}
+                onBackPress={() => navigation.goBack()}
             />
-        </View>
+            {isLoading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#4247BD" />
+                </View>
+            ) : (
+                <SectionList
+                    sections={contacts}
+                    keyExtractor={useCallback((item: Contact) => item.id, [])}
+                    renderItem={renderContactCard}
+                    renderSectionHeader={renderSectionHeader}
+                    contentContainerStyle={styles.listContainer}
+                    showsVerticalScrollIndicator={false}
+                    stickySectionHeadersEnabled={true}
+                    maxToRenderPerBatch={10}
+                    initialNumToRender={10}
+                    windowSize={5}
+                />
+            )}
+        </SafeAreaView>
     );
 }
 
@@ -113,15 +168,16 @@ const styles = StyleSheet.create({
     sectionHeader: {
         paddingVertical: 8,
         paddingHorizontal: 16,
-        backgroundColor: '#F0F0F0',
-        borderRadius: 4,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 8,
+        marginBottom: 12,
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333333',
+        color: '#374151',
     },
-    contactCard: {
+    ContactCard: {
         flexDirection: 'row',
         padding: 16,
         backgroundColor: '#FFFFFF',
@@ -132,26 +188,43 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 2,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
+        alignItems: 'center',
     },
-    contactInfo: {
-        flex: 1,
+    avatar: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         justifyContent: 'center',
+        alignItems: 'center',
+    },
+    initials: {
+        color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: '600',
+    },
+    content: {
+        marginLeft: 12,
+        flex: 1,
     },
     name: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333333',
+        color: '#1F2937',
         marginBottom: 4,
     },
-    function: {
+    details: {
         fontSize: 14,
-        color: '#666666',
-        marginBottom: 2,
+        color: '#6B7280',
+        marginBottom: 8,
     },
-    meetingPlace: {
+    tag: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+    },
+    tagText: {
         fontSize: 12,
-        color: '#999999',
-    },
+        fontWeight: '500',
+    }
 });

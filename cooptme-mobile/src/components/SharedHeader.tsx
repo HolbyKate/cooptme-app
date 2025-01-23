@@ -4,10 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface HeaderProps {
     title: string;
+    showBackButton?: boolean;
+    onBackPress?: () => void;
     rightContent?: React.ReactNode;
 }
 
-export const SharedHeader: React.FC<HeaderProps> = ({ title, rightContent }) => {
+export const SharedHeader: React.FC<HeaderProps> = ({ title, showBackButton, onBackPress, rightContent }) => {
     const insets = useSafeAreaInsets();
     const statusBarHeight = Platform.OS === 'ios' ? insets.top : StatusBar.currentHeight || 0;
 
@@ -47,21 +49,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        height: 56,
+        height: 40,
     },
     leftContent: {
         width: 50,
         alignItems: 'flex-start',
         justifyContent: 'center',
+        marginBottom: 10,
     },
     title: {
         fontSize: 20,
         fontWeight: 'bold',
         color: '#FFFFFF',
         textAlign: 'left',
+        marginBottom: 10,
     },
     logo: {
         height: 40,
         width: 100,
+        marginBottom: 10,
     },
 });

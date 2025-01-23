@@ -66,12 +66,15 @@ export default function CustomDrawer(props: any) {
                     style: 'destructive',
                     onPress: async () => {
                         await signOut(); // Nettoie les données utilisateur via AuthContext
-                        props.navigation.navigate('Home'); // Redirige vers l'écran Home
-                    },
+                        props.navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'DrawerRoot' }]
+                    });
                 },
-            ]
-        );
-    };
+            },
+        ]
+    );
+};
 
     return (
         <LinearGradient

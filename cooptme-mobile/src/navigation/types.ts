@@ -1,3 +1,4 @@
+import { Contact } from '@/types';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 // Bottom Tabs (navigation principale du bas)
@@ -38,4 +39,5 @@ export type RootStackParamList = {
   Chat: undefined;
   ChatConversation: { chatId: string };
   Scan: undefined;
+  ContactDetail: { contact: Contact };
 };

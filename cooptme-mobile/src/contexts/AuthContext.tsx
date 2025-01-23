@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initializeAuth = async () => {
   try {
     setIsLoading(true);
+    setIsAuthenticated(false);
     const [savedToken, savedEmail] = await Promise.all([
       AsyncStorage.getItem('userToken'),
       AsyncStorage.getItem('userEmail'),

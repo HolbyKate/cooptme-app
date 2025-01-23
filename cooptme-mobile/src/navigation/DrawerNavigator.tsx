@@ -11,7 +11,10 @@ import { Alert } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import type { DrawerParamList } from './types';
 
+
 const Drawer = createDrawerNavigator<DrawerParamList>();
+const LogoutScreen: React.FC = () => null;
+
 
 export default function DrawerNavigator() {
     const navigation = useNavigation();
@@ -84,9 +87,10 @@ export default function DrawerNavigator() {
                     drawerIcon: ({ color, size }) => <HelpCircle size={size} color={color} />
                 }}
             />
+
             <Drawer.Screen
                 name="Logout"
-                component={() => null}
+                component={LogoutScreen}
                 options={{
                     title: 'Déconnexion',
                     drawerIcon: ({ color, size }) => <LogOut size={size} color={color} />,

@@ -1,5 +1,5 @@
 // gère l'authentiifcation
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,8 +30,11 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
     const { isAuthenticated, isLoading, initializeAuth } = useAuth();
 
+    const [isInitialized, setIsInitialized] = useState(false);
+
     useEffect(() => {
         initializeAuth();
+        setIsInitialized(true);
     }, []);
 
     // Afficher un écran de chargement pendant l'initialisation de l'authentification
@@ -42,16 +45,16 @@ export default function RootNavigator() {
     return (
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
-                {/* Routes non authentifiées */}
                 {!isAuthenticated ? (
-                    <>
+                    <Stack.Group>
                         <Stack.Screen name="Home" component={HomeScreen} />
                         <Stack.Screen name="Login" component={LoginScreen} />
                         <Stack.Screen name="Register" component={RegisterScreen} />
-                    </>
+                    </Stack.Group>
                 ) : (
-                    // Routes authentifiées
-                    <Stack.Screen name="DrawerRoot" component={DrawerNavigator} options={{ headerShown: false }} />
+                    <Stack.Group>
+                        <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
+                    </Stack.Group>
                 )}
 
                 {/* Routes modales (accessibles depuis n'importe où) */}

@@ -155,5 +155,5 @@ app.use('/api', router);
 
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 API running at http://192.168.31.156:${PORT}/api`); // Home: 192.168.31.156 //village: 192.168.23.27
+    console.log(`🚀 API running at http://192.168.23.27:${PORT}/api`); // Home: 192.168.31.156 //village: 192.168.23.27
 });

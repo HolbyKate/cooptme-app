@@ -2,7 +2,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://192.168.31.156:3000'; // Home: 192.168.31.156 //village: 192.168.23.27
+const BASE_URL = 'http://192.168.23.27:3000'; // Home: 192.168.31.156 //village: 192.168.23.27
 
 // API principale (auth, users)
 export const authApi = axios.create({
@@ -15,6 +15,15 @@ export const authApi = axios.create({
 
 // API pour les profiles (Prisma)
 export const profileApi = axios.create({
+    baseURL: `${BASE_URL}/api`,
+    timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+    }
+});
+
+// API pour les contacts
+export const contactsApi = axios.create({
     baseURL: `${BASE_URL}/api`,
     timeout: 10000,
     headers: {
@@ -68,6 +77,6 @@ const addLogInterceptor = (apiInstance: any, name: string) => {
 // Ajout des intercepteurs à chaque instance
 addLogInterceptor(authApi, 'Auth');
 addLogInterceptor(profileApi, 'Profile');
-addLogInterceptor(jobApi, 'Job');
+addLogInterceptor(contactsApi, 'Contacts');
 
 export default authApi; // Export par défaut pour la rétrocompatibilité
