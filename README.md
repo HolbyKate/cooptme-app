@@ -1,5 +1,5 @@
 # Cooopt.me
-![alt text](https://tinyurl.com/244fee72](https://www.awesomescreenshot.com/image/52625740?key=7d54357d11e45a4b7a263b8076adbd37)
+https://www.awesomescreenshot.com/image/52625740?key=7d54357d11e45a4b7a263b8076adbd37)](https://github.com/user-attachments/assets/c5b58cdf-f55f-48c5-ad36-e16cb6a54c02
 
 Cooptme is a professional networking mobile application that integrates with LinkedIn to facilitate and optimize the management of professional contacts at events. The application scans QR codes on attendees' badges to automatically retrieve and categorize their LinkedIn profiles.
 
