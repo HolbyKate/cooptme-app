@@ -1,10 +1,10 @@
 # Cooopt.me
-![alt text](https://files.readme.io/41dcda7-react-native-black.svg](https://tinyurl.com/244fee72)
+![alt text](https://tinyurl.com/244fee72](https://www.awesomescreenshot.com/image/52625740?key=7d54357d11e45a4b7a263b8076adbd37)
 
 Cooptme is a professional networking mobile application that integrates with LinkedIn to facilitate and optimize the management of professional contacts at events. The application scans QR codes on attendees' badges to automatically retrieve and categorize their LinkedIn profiles.
 
 ## Try the demo
-Checkout the [widget flow]([](https://www.canva.com/design/DAGc7TJZoDo/OXRs3lggU3OXEAN-stksOw/edit?utm_content=DAGc7TJZoDo&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)) to view how the Okra Widget works. *Click "See How it Works"*
+Checkout the [widget flow]([](https://www.canva.com/design/DAGc7TJZoDo/OXRs3lggU3OXEAN-stksOw/edit?utm_content=DAGc7TJZoDo&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)) to view how the Mobile app works. *Click "See How it Works"*
 
 ## Before getting started
 - Checkout our [get started guide](https://docs.okra.ng/docs/get-started-with-okra) to create your developer account and retrieve your Client Token, API Keys, and Private Keys.
