@@ -8,96 +8,48 @@ import {
   StyleSheet,
   Alert,
   Text,
-  Linking
+  Linking,
+  TouchableOpacity
 } from "react-native";
 import { Overlay } from "./Overlay";
 
-type Props = {
+interface ScanScreenProps {
   navigation: any;
-};
+}
 
-export default function ScanScreen({ navigation }: Props) {
+export default function ScanScreen({ navigation }: ScanScreenProps) {
   const qrLock = useRef(false);
-  const appState = useRef(AppState.currentState);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [isDevMode] = useState(__DEV__);
 
   useEffect(() => {
-    const getCameraPermission = async () => {
-      const { status } = await ExpoCamera.requestCameraPermissionsAsync();
+    ExpoCamera.requestCameraPermissionsAsync().then(({ status }) => {
       setHasPermission(status === "granted");
-    };
-
-    getCameraPermission();
-    const subscription = AppState.addEventListener("change", (nextAppState) => {
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === "active"
-      ) {
-        qrLock.current = false;
-      }
-      appState.current = nextAppState;
     });
-
-    return () => {
-      subscription.remove();
-    };
   }, []);
 
-  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
-    console.log("QR Code détecté :", { type, data });
+  const simulateQRScan = () => {
+    handleBarCodeScanned({ type: 'qr', data: "https://facebook.com/johndoe" });
+  };
 
+  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
     if (data && !qrLock.current) {
       qrLock.current = true;
-
       try {
-        if (data.includes("linkedin.com/in/")) {
-          Alert.alert(
-            "Profil LinkedIn détecté",
-            "Voulez-vous ouvrir ce profil ?",
-            [
-              {
-                text: "Annuler",
-                onPress: () => {
-                  qrLock.current = false;
-                },
-                style: "cancel"
-              },
-              {
-                text: "Ouvrir",
-                onPress: async () => {
-                  try {
-                    await Linking.openURL(data);
-                  } catch (error) {
-                    Alert.alert("Erreur", "Impossible d'ouvrir le lien LinkedIn");
-                  } finally {
-                    qrLock.current = false;
-                  }
-                }
-              }
-            ]
-          );
-        } else {
-          throw new Error("Ce QR code ne contient pas de profil LinkedIn valide");
-        }
-      } catch (error: any) {
-        console.error("Erreur lors du traitement du QR Code :", error);
-        Alert.alert("Erreur", error.message || "QR Code invalide");
-        qrLock.current = false;
+        await Linking.openURL(data);
+      } catch (error) {
+        Alert.alert("Erreur", "Impossible d'ouvrir le lien");
       }
+      qrLock.current = false;
     }
   };
 
-  if (hasPermission === null) {
-    return <Text>Demande d'autorisation de la caméra...</Text>;
-  }
-
-  if (hasPermission === false) {
-    return <Text>Accès à la caméra refusé</Text>;
-  }
+  if (hasPermission === null) return <Text>Demande d'autorisation de la caméra...</Text>;
+  if (hasPermission === false) return <Text>Accès à la caméra refusé</Text>;
 
   return (
     <SafeAreaView style={StyleSheet.absoluteFillObject}>
-      {Platform.OS === "android" ? <StatusBar hidden /> : null}
+      {Platform.OS === "android" && <StatusBar hidden />}
       <CameraView
         style={StyleSheet.absoluteFillObject}
         facing="back"
@@ -107,22 +59,30 @@ export default function ScanScreen({ navigation }: Props) {
         onBarcodeScanned={handleBarCodeScanned}
       />
       <Overlay />
+      {isDevMode && (
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={simulateQRScan}
+        >
+          <Text style={styles.testButtonText}>Test</Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  testButtonContainer: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+  testButton: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 10,
   },
+  testButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  }
 });

@@ -7,7 +7,7 @@ export const GOOGLE_CONFIG = {
 
 export const LINKEDIN_CONFIG = {
     clientId: process.env.EXPO_PUBLIC_LINKEDIN_CLIENT_ID || '',
-    redirectUri: 'your-scheme://oauth2/linkedin', // À configurer selon votre schéma d'application
+    redirectUri: 'your-scheme://oauth2/linkedin',
     scopes: ['r_liteprofile', 'r_emailaddress'],
 };
 
