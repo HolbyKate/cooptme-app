@@ -59,14 +59,6 @@ export default function ScanScreen({ navigation }: ScanScreenProps) {
         onBarcodeScanned={handleBarCodeScanned}
       />
       <Overlay />
-      {isDevMode && (
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={simulateQRScan}
-        >
-          <Text style={styles.testButtonText}>Test</Text>
-        </TouchableOpacity>
-      )}
     </SafeAreaView>
   );
 }
