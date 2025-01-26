@@ -9,25 +9,88 @@ import {
   SafeAreaView,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from "react-native";
-import { Menu, Calendar, MapPin, Clock } from "lucide-react-native";
+import { Menu, Calendar as CalendarIcon, MapPin, Clock, Plus, X } from "lucide-react-native";
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { EventService, EventDTO } from "../../api/services/events/event.service";
 import { Linking } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../types/index';
 
-// Définir le type de navigation pour le tiroir
 type EventsScreenNavigationProp = DrawerNavigationProp<RootStackParamList, 'Events'>;
+
+const CALENDAR_STORAGE_KEY = 'calendar_events_status';
 
 export default function EventsScreen() {
   const navigation = useNavigation<EventsScreenNavigationProp>();
   const [events, setEvents] = useState<EventDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [calendarStatus, setCalendarStatus] = useState<Record<string, boolean>>({});
 
   const handleMenuPress = () => {
     navigation.dispatch(DrawerActions.openDrawer());
+  };
+
+  useEffect(() => {
+    loadEvents();
+    loadCalendarStatus();
+  }, []);
+
+  const loadCalendarStatus = async () => {
+    try {
+      const status = await AsyncStorage.getItem(CALENDAR_STORAGE_KEY);
+      if (status) {
+        setCalendarStatus(JSON.parse(status));
+      }
+    } catch (error) {
+      console.error("Error loading calendar status:", error);
+    }
+  };
+
+  const toggleCalendarEvent = async (event: EventDTO) => {
+    try {
+      const newStatus = {
+        ...calendarStatus,
+        [event.id]: !calendarStatus[event.id]
+      };
+      
+      await AsyncStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(newStatus));
+      setCalendarStatus(newStatus);
+
+      if (newStatus[event.id]) {
+        // Convert date string to Date object
+        const eventDate = new Date(event.date);
+        
+        // Navigate to Calendar screen with event details
+        navigation.navigate('Calendar', {
+          selectedDate: eventDate.toISOString().split('T')[0],
+          newEvent: {
+            title: event.title,
+            description: event.description || '',
+            date: eventDate.toISOString().split('T')[0],
+            startTime: event.time?.split('-')[0]?.trim() || '09:00',
+            endTime: event.time?.split('-')[1]?.trim() || '10:00',
+            categoryId: '1', // Default to Professional category
+          }
+        });
+      } else {
+        // Show confirmation of removal
+        Alert.alert(
+          'Événement retiré',
+          'L\'événement a été retiré de votre calendrier',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error("Error toggling calendar status:", error);
+      Alert.alert(
+        'Erreur',
+        'Une erreur est survenue lors de la modification du calendrier'
+      );
+    }
   };
 
   const loadEvents = async () => {
@@ -53,63 +116,75 @@ export default function EventsScreen() {
     }
   };
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
   const renderEventCard = ({ item }: { item: EventDTO }) => (
-    <TouchableOpacity
-      style={styles.eventCard}
-      onPress={() => item.url && Linking.openURL(item.url)}
-    >
-      <View style={styles.eventHeader}>
-        <Text style={styles.eventSource}>{item.source}</Text>
-        <Text style={styles.eventType}>
-          {item.type === "job_fair"
-            ? "🎯 Salon Emploi"
-            : item.type === "conference"
-              ? "🎤 Conférence"
-              : item.type === "meetup"
-                ? "👥 Meetup"
-                : "📅 Événement"}
-        </Text>
-      </View>
-
-      <Text style={styles.eventTitle}>{item.title}</Text>
-
-      <View style={styles.eventDetails}>
-        <View style={styles.detailRow}>
-          <Calendar size={16} color="#666" />
-          <Text style={styles.detailText}>
-            {new Date(item.date).toLocaleDateString("fr-FR", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
+    <View style={styles.eventCard}>
+      <TouchableOpacity
+        style={styles.eventContent}
+        onPress={() => item.url && Linking.openURL(item.url)}
+      >
+        <View style={styles.eventHeader}>
+          <Text style={styles.eventSource}>{item.source}</Text>
+          <Text style={styles.eventType}>
+            {item.type === "job_fair"
+              ? "🎯 Salon Emploi"
+              : item.type === "conference"
+                ? "🎤 Conférence"
+                : item.type === "meetup"
+                  ? "👥 Meetup"
+                  : "📅 Événement"}
           </Text>
         </View>
 
-        {item.time && (
+        <Text style={styles.eventTitle}>{item.title}</Text>
+
+        <View style={styles.eventDetails}>
           <View style={styles.detailRow}>
-            <Clock size={16} color="#666" />
-            <Text style={styles.detailText}>{item.time}</Text>
+            <CalendarIcon size={16} color="#666" />
+            <Text style={styles.detailText}>
+              {new Date(item.date).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </Text>
           </View>
+
+          {item.time && (
+            <View style={styles.detailRow}>
+              <Clock size={16} color="#666" />
+              <Text style={styles.detailText}>{item.time}</Text>
+            </View>
+          )}
+
+          <View style={styles.detailRow}>
+            <MapPin size={16} color="#666" />
+            <Text style={styles.detailText}>{item.location}</Text>
+          </View>
+        </View>
+
+        {item.organizer && (
+          <Text style={styles.organizer}>Organisé par: {item.organizer}</Text>
         )}
 
-        <View style={styles.detailRow}>
-          <MapPin size={16} color="#666" />
-          <Text style={styles.detailText}>{item.location}</Text>
-        </View>
-      </View>
+        <Text style={styles.eventDescription} numberOfLines={3}>
+          {item.description}
+        </Text>
+      </TouchableOpacity>
 
-      {item.organizer && (
-        <Text style={styles.organizer}>Organisé par: {item.organizer}</Text>
-      )}
-
-      <Text style={styles.eventDescription} numberOfLines={3}>
-        {item.description}
-      </Text>
-    </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.calendarButton,
+          calendarStatus[item.id] && styles.calendarButtonActive
+        ]}
+        onPress={() => toggleCalendarEvent(item)}
+      >
+        {calendarStatus[item.id] ? (
+          <X size={20} color="#FF4444" />
+        ) : (
+          <Plus size={20} color="#4247BD" />
+        )}
+      </TouchableOpacity>
+    </View>
   );
 
   if (loading) {
@@ -190,6 +265,10 @@ const styles = StyleSheet.create({
     width: 100,
     height: 40,
   },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
   listContainer: {
     paddingBottom: 20,
   },
@@ -203,6 +282,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    flexDirection: 'row',
+  },
+  eventContent: {
+    flex: 1,
+    marginRight: 12,
   },
   eventHeader: {
     flexDirection: "row",
@@ -265,8 +349,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
+  calendarButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  calendarButtonActive: {
+    backgroundColor: '#FEE2E2',
   },
 });

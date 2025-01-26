@@ -7,9 +7,11 @@ const prisma = new PrismaClient();
 
 // Mapping des catégories en fonction du job
 const jobCategoryMapping: { [key: string]: string } = {
+    new: 'New',
     engineer: 'Tech',
     developer: 'Tech',
     designer: 'Creative',
+    student: 'Student',
     manager: 'Management',
     teacher: 'Education',
     doctor: 'Healthcare',

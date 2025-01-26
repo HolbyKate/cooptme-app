@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     },
     qrContainer: {
         position: 'absolute',
-        bottom: 100,
+        bottom: 60,
         zIndex: 3,
     },
     qrBackground: {

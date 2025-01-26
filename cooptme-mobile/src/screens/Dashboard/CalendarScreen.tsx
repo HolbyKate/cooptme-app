@@ -109,7 +109,7 @@ export default function CalendarScreen() {
         setSelectedDate(newDate);
       }
       if (isMounted) {
-        navigation.setParams(undefined);
+        navigation.setParams({ selectedDate: newDate });
       }
     } catch (error) {
       console.error('Error handling date change:', error);
@@ -323,6 +323,43 @@ export default function CalendarScreen() {
       </TouchableOpacity>
     </View>
   ), []);
+
+  useEffect(() => {
+  const handleNewEvent = async () => {
+    const newEventData = route.params?.newEvent;
+    if (!newEventData) return;
+
+    const startTime = new Date();
+    startTime.setHours(parseInt(newEventData.startTime.split(':')[0]));
+    startTime.setMinutes(parseInt(newEventData.startTime.split(':')[1]));
+
+    const endTime = new Date();
+    endTime.setHours(parseInt(newEventData.endTime.split(':')[0]));
+    endTime.setMinutes(parseInt(newEventData.endTime.split(':')[1]));
+
+    const eventToSave: Event = {
+      id: `event_${Date.now()}`,
+      title: newEventData.title,
+      description: newEventData.description,
+      date: newEventData.date,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      categoryId: newEventData.categoryId,
+    };
+
+    const updatedEvents = { ...events };
+    if (!updatedEvents[newEventData.date]) {
+      updatedEvents[newEventData.date] = [];
+    }
+    updatedEvents[newEventData.date].push(eventToSave);
+
+    await saveData(updatedEvents);
+    setSelectedDate(newEventData.date);
+    navigation.setParams({ newEvent: undefined });
+  };
+
+  handleNewEvent();
+}, [route.params?.newEvent]);
 
   return (
     <SafeAreaView style={styles.container}>

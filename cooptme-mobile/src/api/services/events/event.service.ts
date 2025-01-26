@@ -6,7 +6,7 @@ export interface EventDTO {
     time?: string;
     location: string;
     organizer?: string;
-    type: 'job_fair' | 'conference' | 'meetup' | 'other';
+    type: 'job_fair' | 'conference' | 'meetup' | 'school' | 'other';
     source: string;
     url?: string;
 }
@@ -14,23 +14,23 @@ export interface EventDTO {
 const mockEvents: EventDTO[] = [
     {
         id: '1',
-        title: 'Meetup React Native',
-        description: 'Discussion sur les dernières fonctionnalités de React Native',
-        date: '2024-12-18',
+        title: 'Demodays C#21',
+        description: 'Présentation du projet cooptme',
+        date: '2025-01-30',
         time: '14:00 - 16:00',
-        location: 'Station F, Paris',
-        organizer: 'React France',
-        type: 'meetup',
-        source: 'Meetup.com',
-        url: 'https://example.com/meetup-react'
+        location: 'Holberton School Toulouse, 37 Rue des Marchands, 31000 Toulouse',
+        organizer: 'Holberton School',
+        type: 'school',
+        source: 'Holberton School',
+        url: 'https://www.holbertonschool.fr/demoday'
     },
     {
         id: '2',
-        title: 'Forum de l\'emploi Tech',
-        description: 'Rencontrez les entreprises qui recrutent',
-        date: '2024-12-20',
+        title: 'Salon de l’Apprentissage et de l’Alternance',
+        description: 'Deux journées pour tout connaître des atouts et des contrats en l’alternance. Un salon organisé par la Chambre de commerce et d’industrie de Lyon, FormaSup, l’IFIR et l’Etudiant.',
+        date: '2025-02-08',
         time: '09:00 - 18:00',
-        location: 'Paris Expo',
+        location: 'Centre de congrès Pierre Baudis',
         organizer: 'TechRecruit',
         type: 'job_fair',
         source: 'JobTech',
@@ -38,15 +38,15 @@ const mockEvents: EventDTO[] = [
     },
     {
         id: '3',
-        title: 'Workshop Design System',
-        description: 'Apprenez à créer un design system efficace',
-        date: '2024-12-20',
+        title: 'Vivatech',
+        description: 'This is where business meets innovation',
+        date: '2025-06-11',
         time: '10:00 - 12:00',
         location: 'La Défense',
-        organizer: 'UX Design France',
+        organizer: 'Vivatech',
         type: 'conference',
-        source: 'Eventbrite',
-        url: 'https://example.com/workshop-design'
+        source: 'Vivatech',
+        url: 'https://www.vivatech.com/'
     }
 ];
 
@@ -61,8 +61,6 @@ export const EventService = {
     // Ajout de la méthode refreshEvents
     refreshEvents: async (): Promise<EventDTO[]> => {
         await new Promise(resolve => setTimeout(resolve, 800));
-        // Dans un vrai service, on ferait un nouvel appel à l'API
-        // Pour l'instant, on retourne les mêmes données mockées
         return mockEvents;
     },
 

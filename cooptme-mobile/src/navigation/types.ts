@@ -1,6 +1,15 @@
 import { Contact } from '@/types';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
+export interface NewEventParams {
+  title: string;
+  description: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  categoryId: string;
+}
+
 // Bottom Tabs (navigation principale du bas)
 export type BottomTabParamList = {
   Dashboard: undefined;
@@ -34,7 +43,10 @@ export type RootStackParamList = {
   Contacts: undefined;
   Profiles: undefined;
   Events: undefined;
-  Calendar: undefined;
+  Calendar: {
+    selectedDate?: string;
+    newEvent?: NewEventParams;
+  };
   Job: undefined;
   Chat: undefined;
   ChatConversation: { chatId: string };

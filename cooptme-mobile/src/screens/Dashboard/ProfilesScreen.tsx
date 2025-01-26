@@ -277,10 +277,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   categoryCard: {
-    width: '48%',
+    width: '46%',
     backgroundColor: '#FFFFFF',
     borderRadius: 15,
     padding: 16,
+    margin: 7,
     marginBottom: 16,
     alignItems: 'center',
     shadowColor: '#000',

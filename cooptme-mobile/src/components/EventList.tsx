@@ -4,7 +4,7 @@ import { EventDTO, EventListProps } from '../types/index';
 
 export const EventList: React.FC<EventListProps> = ({ events, onEventPress }) => {
     const renderItem = ({ item }: { item: EventDTO }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             style={styles.eventItem}
             onPress={() => onEventPress?.(item)}
         >

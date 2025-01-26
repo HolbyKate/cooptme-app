@@ -7,16 +7,13 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Alert,
-    Modal,
+    Linking,
+    TextInput,
 } from 'react-native';
-import { contactsApi } from '../../api/config/axios';
-import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SharedHeader } from '../../components/SharedHeader';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { RootStackParamList, DrawerParamList } from '../../navigation/types';
+import { Search } from 'lucide-react-native';
+import { contactsApi } from '../../api/config/axios';
 
 type Contact = {
     id: string;
@@ -25,29 +22,47 @@ type Contact = {
     company: string;
     job: string;
     category: string;
+    url: string;
 };
 
-type ContactsScreenNavigationProp = CompositeNavigationProp<
-    DrawerNavigationProp<DrawerParamList>,
-    NativeStackNavigationProp<RootStackParamList>
->;
-
 export default function ContactsScreen() {
-    const navigation = useNavigation<ContactsScreenNavigationProp>();
     const [contacts, setContacts] = useState<{ title: string; data: Contact[] }[]>([]);
+    const [filteredContacts, setFilteredContacts] = useState<{ title: string; data: Contact[] }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    const sectionListRef = React.useRef<SectionList>(null);
 
-    const getCategoryColor = useCallback((category: string): string => ({
-        Tech: '#4c51c6',
-        Creative: '#10b981',
-        Management: '#f59e0b',
-        Education: '#3b82f6',
-        Healthcare: '#ef4444',
-        Legal: '#8b5cf6',
-        default: '#6b7280'
-    }[category] || '#6b7280'), []);
+    const handleProfilePress = async (url: string) => {
+        try {
+            await Linking.openURL(url);
+        } catch (error) {
+            Alert.alert('Erreur', 'Impossible d\'ouvrir le profil LinkedIn');
+        }
+    };
+
+    const handleSearch = (text: string) => {
+        setSearchQuery(text);
+        if (!text.trim()) {
+            setFilteredContacts(contacts);
+            return;
+        }
+
+        const searchResults = contacts.reduce((acc, section) => {
+            const filteredData = section.data.filter(contact => 
+                `${contact.firstName} ${contact.lastName}`.toLowerCase().includes(text.toLowerCase()) ||
+                contact.company.toLowerCase().includes(text.toLowerCase()) ||
+                contact.job.toLowerCase().includes(text.toLowerCase())
+            );
+            
+            if (filteredData.length > 0) {
+                acc.push({ ...section, data: filteredData });
+            }
+            return acc;
+        }, [] as typeof contacts);
+
+        setFilteredContacts(searchResults);
+    };
 
     const fetchContacts = useCallback(async () => {
         try {
@@ -67,8 +82,9 @@ export default function ContactsScreen() {
                 }));
 
             setContacts(sections);
+            setFilteredContacts(sections);
         } catch (error: any) {
-            Alert.alert('Erreur', error.response?.data?.message || 'Impossible de récupérer les contacts.');
+            Alert.alert('Erreur', 'Impossible de récupérer les contacts');
         } finally {
             setIsLoading(false);
         }
@@ -88,36 +104,36 @@ export default function ContactsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <SharedHeader
-                title="Contacts"
-                showBackButton
-                onBackPress={navigation.goBack}
-            />
+            <SharedHeader title="Contacts" />
+            <View style={styles.searchContainer}>
+                <Search size={20} color="#6B7280" style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Rechercher un contact..."
+                    value={searchQuery}
+                    onChangeText={handleSearch}
+                    placeholderTextColor="#9CA3AF"
+                />
+            </View>
             <SectionList
-                sections={contacts}
+                ref={sectionListRef}
+                sections={filteredContacts}
                 keyExtractor={item => item.id}
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         style={styles.card}
                         activeOpacity={0.7}
-                        onPress={() => {
-                            setSelectedContact(item);
-                            setModalVisible(true);
-                        }}
+                        onPress={() => handleProfilePress(item.url)}
                     >
-                        <View style={[styles.avatar, { backgroundColor: getCategoryColor(item.category) }]}>
+                        <View style={styles.avatar}>
                             <Text style={styles.initials}>
                                 {`${item.firstName[0]}${item.lastName[0]}`}
                             </Text>
                         </View>
-                        <View style={styles.content}>
+                        <View style={styles.contactInfo}>
                             <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
                             <Text style={styles.details}>{item.job} • {item.company}</Text>
-                            <View style={[styles.tag, { backgroundColor: `${getCategoryColor(item.category)}20` }]}>
-                                <Text style={[styles.tagText, { color: getCategoryColor(item.category) }]}>
-                                    {item.category}
-                                </Text>
-                            </View>
+                            <Text style={styles.linkedInText}>Voir sur LinkedIn</Text>
                         </View>
                     </TouchableOpacity>
                 )}
@@ -126,54 +142,9 @@ export default function ContactsScreen() {
                         <Text style={styles.sectionTitle}>{title}</Text>
                     </View>
                 )}
-                contentContainerStyle={styles.listContainer}
-                showsVerticalScrollIndicator={false}
                 stickySectionHeadersEnabled
+                contentContainerStyle={styles.listContent}
             />
-
-            <Modal
-                animationType="slide"
-                transparent
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        {selectedContact && (
-                            <>
-                                <View style={styles.modalHeader}>
-                                    <View style={styles.modalTitleContainer}>
-                                        <Text style={styles.modalTitle}>
-                                            {selectedContact.firstName} {selectedContact.lastName}
-                                        </Text>
-                                        <Text style={styles.modalSubtitle}>
-                                            {selectedContact.company}
-                                        </Text>
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.closeButton}
-                                        onPress={() => setModalVisible(false)}
-                                    >
-                                        <Text style={styles.closeButtonText}>×</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <View style={styles.modalBody}>
-                                    <Text style={styles.modalText}>{selectedContact.job}</Text>
-                                    <View style={[styles.modalTag, {
-                                        backgroundColor: `${getCategoryColor(selectedContact.category)}20`
-                                    }]}>
-                                        <Text style={[styles.modalTagText, {
-                                            color: getCategoryColor(selectedContact.category)
-                                        }]}>
-                                            {selectedContact.category}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </>
-                        )}
-                    </View>
-                </View>
-            </Modal>
         </SafeAreaView>
     );
 }
@@ -188,8 +159,28 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    listContainer: {
-        padding: 16,
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        height: 40,
+        fontSize: 16,
+        color: '#1F2937',
+        paddingVertical: 8,
+    },
+    listContent: {
+        paddingHorizontal: 16,
+        paddingBottom: 20,
     },
     card: {
         flexDirection: 'row',
@@ -202,24 +193,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 2,
-        alignItems: 'center',
-    },
-    sectionHeader: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        backgroundColor: '#F3F4F6',
-        borderRadius: 8,
-        marginBottom: 12,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#374151',
     },
     avatar: {
         width: 50,
         height: 50,
         borderRadius: 25,
+        backgroundColor: '#4247BD',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -228,7 +207,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '600',
     },
-    content: {
+    contactInfo: {
         marginLeft: 12,
         flex: 1,
     },
@@ -241,72 +220,23 @@ const styles = StyleSheet.create({
     details: {
         fontSize: 14,
         color: '#6B7280',
-        marginBottom: 8,
-    },
-    tag: {
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 12,
-        alignSelf: 'flex-start',
-    },
-    tagText: {
-        fontSize: 12,
-        fontWeight: '500',
-    },
-    modalContainer: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'flex-end',
-    },
-    modalContent: {
-        backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        padding: 20,
-        minHeight: '40%',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 20,
-    },
-    modalTitleContainer: {
-        flex: 1,
-    },
-    modalTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#1F2937',
         marginBottom: 4,
     },
-    modalSubtitle: {
-        fontSize: 16,
-        color: '#6B7280',
-    },
-    closeButton: {
-        padding: 4,
-    },
-    closeButtonText: {
-        fontSize: 28,
-        color: '#9CA3AF',
-    },
-    modalBody: {
-        flex: 1,
-    },
-    modalText: {
-        fontSize: 18,
-        color: '#4B5563',
-        marginBottom: 16,
-    },
-    modalTag: {
-        paddingHorizontal: 16,
-        paddingVertical: 6,
-        borderRadius: 16,
-        alignSelf: 'flex-start',
-    },
-    modalTagText: {
+    linkedInText: {
+        color: '#4247BD',
         fontSize: 14,
         fontWeight: '500',
+    },
+    sectionHeader: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        backgroundColor: '#FF8f66',
+        borderRadius: 8,
+        marginBottom: 12,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
     },
 });
