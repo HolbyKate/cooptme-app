@@ -70,7 +70,7 @@ export default function LoginScreen({ navigation }: Props) {
 
       if (result?.type === 'success' && result.authentication?.accessToken) {
         await googleLogin(result.authentication.accessToken);
-        // La navigation sera gérée automatiquement par le contexte
+        navigation.navigate('Dashboard');
       } else if (result?.type === 'cancel') {
         console.log('Connexion Google annulée par l\'utilisateur');
       }
