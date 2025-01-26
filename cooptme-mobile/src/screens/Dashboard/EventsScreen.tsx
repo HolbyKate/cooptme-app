@@ -61,23 +61,20 @@ export default function EventsScreen() {
       setCalendarStatus(newStatus);
 
       if (newStatus[event.id]) {
-        // Convert date string to Date object
-        const eventDate = new Date(event.date);
+        const [startTime, endTime] = event.time?.split('-').map(t => t.trim()) || ['09:00', '10:00'];
         
-        // Navigate to Calendar screen with event details
         navigation.navigate('Calendar', {
-          selectedDate: eventDate.toISOString().split('T')[0],
+          selectedDate: new Date(event.date).toISOString().split('T')[0],
           newEvent: {
             title: event.title,
-            description: event.description || '',
-            date: eventDate.toISOString().split('T')[0],
-            startTime: event.time?.split('-')[0]?.trim() || '09:00',
-            endTime: event.time?.split('-')[1]?.trim() || '10:00',
-            categoryId: '1', // Default to Professional category
+            description: event.description,
+            date: new Date(event.date).toISOString().split('T')[0],
+            startTime,
+            endTime,
+            categoryId: '1',
           }
         });
       } else {
-        // Show confirmation of removal
         Alert.alert(
           'Événement retiré',
           'L\'événement a été retiré de votre calendrier',
@@ -86,10 +83,7 @@ export default function EventsScreen() {
       }
     } catch (error) {
       console.error("Error toggling calendar status:", error);
-      Alert.alert(
-        'Erreur',
-        'Une erreur est survenue lors de la modification du calendrier'
-      );
+      Alert.alert('Erreur', 'Une erreur est survenue lors de la modification du calendrier');
     }
   };
 

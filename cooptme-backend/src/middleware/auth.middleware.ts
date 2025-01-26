@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decode as atob } from 'base-64';
-import { DecodedToken } from "../../../cooptme-mobile/src/navigation/types";
-
+import { DecodedToken } from "../types/auth.types";
 export const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
 };

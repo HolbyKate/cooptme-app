@@ -21,6 +21,11 @@ interface AuthError extends Error {
     status?: number;
 }
 
+interface UserWithReset extends User {
+    resetPasswordToken: string | null;
+    resetPasswordExpires: Date | null;
+}
+
 // Configuration
 const prisma = new PrismaClient();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -86,7 +91,7 @@ export class AuthService {
             // Update last login timestamp
             await prisma.user.update({
                 where: { id: user.id },
-                data: { lastLoginAt: new Date() },
+                data: { lastLogin: new Date() },
             });
 
             return {
@@ -201,21 +206,19 @@ export class AuthService {
  */
 async resetPassword(token: string, newPassword: string): Promise<void> {
     try {
-        // Vérifiez et décoder le token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
 
         if (!decoded || !decoded.userId) {
             throw this.createError(400, 'Token invalide ou expiré.');
         }
 
-        // Récupérer l'utilisateur avec le token et vérifier sa validité
         const user = await prisma.user.findFirst({
             where: {
-                id: String(decoded.userId),
+                id: decoded.userId,
                 resetPasswordToken: token,
-                resetPasswordExpires: { gt: new Date() }, // Vérifiez si le token a expiré
+                resetPasswordExpires: { gt: new Date() },
             },
-        });
+        }) as UserWithReset | null;
 
         if (!user) {
             throw this.createError(400, 'Token invalide ou expiré.');

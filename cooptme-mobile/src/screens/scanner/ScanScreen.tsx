@@ -29,7 +29,7 @@ export default function ScanScreen({ navigation }: ScanScreenProps) {
   }, []);
 
   const simulateQRScan = () => {
-    handleBarCodeScanned({ type: 'qr', data: "https://facebook.com/johndoe" });
+    handleBarCodeScanned({ type: 'qr', data: "https://cooptme.com" });
   };
 
   const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {

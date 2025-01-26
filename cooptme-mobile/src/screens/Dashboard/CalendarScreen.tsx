@@ -41,6 +41,11 @@ interface Event {
   endTime: string;
   categoryId: string;
   notificationId?: string;
+  location?: string;
+  type?: 'job_fair' | 'conference' | 'meetup' | 'school' | 'other';
+  url?: string;
+  source?: string;
+  organizer?: string;
 }
 
 interface NewEventForm {

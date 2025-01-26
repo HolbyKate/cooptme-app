@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { Profile, ProfileCategory } from '../types/profile.types';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +18,7 @@ export class ProfilesController {
         }
     }
 
-    async getProfilesByCategory(category: string) {
+    async getProfilesByCategory(category: ProfileCategory) {
         try {
             const profiles = await prisma.profile.findMany({
                 where: {
