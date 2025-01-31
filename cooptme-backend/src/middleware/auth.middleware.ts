@@ -1,13 +1,28 @@
+/**
+ * Authentication utility functions for React Native applications.
+ * Handles JWT token management and verification.
+ */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decode as atob } from 'base-64';
-import { DecodedToken } from "../types/auth.types";
+
+interface DecodedToken {
+  userId: string;
+  email: string;
+  exp: number;
+  iat: number;
+}
+
+/**
+ * Retrieves the authentication token from AsyncStorage.
+ * @returns {Promise<string | null>} The authentication token or null if not found.
+ */
 export const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
 };
 
 export const verifyToken = (token: string) => {
   try {
-    // Parse JWT manuellement puisque jwt-decode ne fonctionne pas bien en RN
+
     const [, payload] = token.split('.');
     const decodedPayload = JSON.parse(atob(payload)) as DecodedToken;
     const currentTime = Date.now() / 1000;

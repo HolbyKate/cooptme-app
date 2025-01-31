@@ -1,10 +1,9 @@
-import { PrismaClient } from '@prisma/client';
-import type { User } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
+import { createHash } from 'crypto';
 
-// Types
 interface RegisterData {
     email: string;
     password: string;
@@ -14,289 +13,273 @@ interface RegisterData {
 
 interface LoginResponse {
     token: string;
-    user: Omit<User, 'password'>;
+    user: Omit<User, 'password' | 'resetPasswordToken' | 'resetPasswordExpires'>;
 }
 
 interface AuthError extends Error {
-    status?: number;
+    status: number;
 }
 
-interface UserWithReset extends User {
-    resetPasswordToken: string | null;
-    resetPasswordExpires: Date | null;
+interface ResetTokenPayload {
+    userId: string;
+    iat?: number;
+    exp?: number;
 }
 
-// Configuration
-const prisma = new PrismaClient();
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const SALT_ROUNDS = 12;
+const RESET_TOKEN_EXPIRY = '1h';
+const AUTH_TOKEN_EXPIRY = '1h';
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 
 export class AuthService {
-    /**
-     * Register a new user.
-     */
+    private prisma: PrismaClient;
+    private googleClient: OAuth2Client;
+    private loginAttempts: Map<string, { count: number; lastAttempt: number }>;
+
+    constructor() {
+        if (!process.env.JWT_SECRET || !process.env.GOOGLE_CLIENT_ID) {
+            throw new Error('Missing required environment variables');
+        }
+        this.prisma = new PrismaClient();
+        this.googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        this.loginAttempts = new Map();
+    }
+
     async register(data: RegisterData): Promise<LoginResponse> {
-        try {
-            // Check if user already exists
-            const existingUser = await prisma.user.findUnique({
-                where: { email: data.email.toLowerCase() },
-            });
+        this.validatePassword(data.password);
+        const emailHash = this.hashEmail(data.email);
 
-            if (existingUser) {
-                throw this.createError(409, 'Un compte existe déjà avec cet email.');
+        const existingUser = await this.prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email: data.email.toLowerCase() },
+                    { emailHash }
+                ]
             }
+        });
 
-            // Hash the password
-            const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
-
-            // Create the user
-            const user = await prisma.user.create({
-                data: {
-                    email: data.email.toLowerCase(),
-                    password: hashedPassword,
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    provider: 'email',
-                    emailVerified: false,
-                },
-            });
-
-            return {
-                token: this.generateToken(user),
-                user: this.sanitizeUser(user),
-            };
-        } catch (error) {
-            throw this.handleError(error);
+        if (existingUser) {
+            throw this.createError(409, 'Email already exists');
         }
+
+        const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+        const user = await this.prisma.user.create({
+            data: {
+                ...data,
+                email: data.email.toLowerCase(),
+                emailHash,
+                password: hashedPassword,
+                provider: 'email',
+                emailVerified: false
+            }
+        });
+
+        return {
+            token: this.generateToken(user),
+            user: this.sanitizeUser(user)
+        };
     }
 
-    /**
-     * Login a user with email and password.
-     */
     async emailLogin(email: string, password: string): Promise<LoginResponse> {
-        try {
-            const user = await prisma.user.findUnique({
-                where: { email: email.toLowerCase() },
-            });
-
-            if (!user || !user.password) {
-                throw this.createError(401, 'Email ou mot de passe incorrect.');
-            }
-
-            const isValid = await this.validatePassword(password, user.password);
-            if (!isValid) {
-                throw this.createError(401, 'Email ou mot de passe incorrect.');
-            }
-
-            // Update last login timestamp
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { lastLogin: new Date() },
-            });
-
-            return {
-                token: this.generateToken(user),
-                user: this.sanitizeUser(user),
-            };
-        } catch (error) {
-            throw this.handleError(error);
+        const emailLower = email.toLowerCase();
+        
+        if (this.isLockedOut(emailLower)) {
+            throw this.createError(429, 'Too many login attempts. Try again later.');
         }
+
+        const user = await this.prisma.user.findUnique({
+            where: { email: emailLower }
+        });
+
+        if (!user?.password || !(await bcrypt.compare(password, user.password))) {
+            this.recordLoginAttempt(emailLower);
+            throw this.createError(401, 'Invalid credentials');
+        }
+
+        this.loginAttempts.delete(emailLower);
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() }
+        });
+
+        return {
+            token: this.generateToken(user),
+            user: this.sanitizeUser(user)
+        };
     }
 
-    /**
-     * Login or register a user using Google OAuth.
-     */
     async googleLogin(token: string): Promise<LoginResponse> {
         try {
-            const ticket = await googleClient.verifyIdToken({
+            const ticket = await this.googleClient.verifyIdToken({
                 idToken: token,
-                audience: process.env.GOOGLE_CLIENT_ID,
+                audience: process.env.GOOGLE_CLIENT_ID
             });
 
             const payload = ticket.getPayload();
-            if (!payload || !payload.email) {
-                throw this.createError(400, 'Token Google invalide.');
+            if (!payload?.email) {
+                throw this.createError(400, 'Invalid Google token');
             }
 
-            let user = await prisma.user.findFirst({
-                where: {
-                    OR: [
-                        { email: payload.email },
-                        { providerId: payload.sub, provider: 'google' },
-                    ],
-                },
-            });
-
-            if (user) {
-                // Update existing user data
-                user = await prisma.user.update({
-                    where: { id: user.id },
-                    data: {
-                        lastLoginAt: new Date(),
-                        photoUrl: payload.picture || user.photoUrl,
-                    },
-                });
-            } else {
-                // Create a new user
-                user = await prisma.user.create({
-                    data: {
-                        email: payload.email,
-                        firstName: payload.given_name || '',
-                        lastName: payload.family_name || '',
-                        provider: 'google',
-                        providerId: payload.sub,
-                        photoUrl: payload.picture,
-                        emailVerified: true,
-                        createdAt: new Date(),
-                        lastLoginAt: new Date(),
-                    },
-                });
-            }
-
+            const user = await this.upsertGoogleUser(payload);
             return {
                 token: this.generateToken(user),
-                user: this.sanitizeUser(user),
+                user: this.sanitizeUser(user)
             };
         } catch (error) {
-            throw this.handleError(error);
+            throw this.createError(401, 'Google authentication failed');
         }
     }
 
-    /**
-     * Request a password reset for a user.
-     */
     async requestPasswordReset(email: string): Promise<void> {
-    try {
-        // Vérifiez si l'utilisateur existe
-        const user = await prisma.user.findUnique({
-            where: { email: email.toLowerCase() },
+        const user = await this.prisma.user.findUnique({
+            where: { email: email.toLowerCase() }
         });
 
         if (!user) {
-            throw this.createError(404, 'Aucun compte associé à cet email.');
+            // Return void to prevent email enumeration
+            return;
         }
 
-        // Générer un token JWT pour la réinitialisation
-        const resetToken = jwt.sign(
-            { userId: user.id },
-            process.env.JWT_SECRET!,
-            { expiresIn: '1h' } // Valable 1 heure
-        );
+        const resetToken = this.generateResetToken(user.id);
+        const hashedToken = createHash('sha256').update(resetToken).digest('hex');
 
-        console.log('Generated Reset Token:', resetToken); // Debugging
-
-        // Mettre à jour l'utilisateur avec le token et sa date d'expiration
-        await prisma.user.update({
+        await this.prisma.user.update({
             where: { id: user.id },
             data: {
-                resetPasswordToken: resetToken,
-                resetPasswordExpires: new Date(Date.now() + 3600000), // 1 heure
-            },
+                resetPasswordToken: hashedToken,
+                resetPasswordExpires: new Date(Date.now() + 3600000)
+            }
         });
 
-        // TODO: Envoyer un email avec le lien de réinitialisation contenant le resetToken
-        console.log(`Envoyez ce lien au client : https://cooptme.com/reset-password?token=${resetToken}`);
-    } catch (error) {
-        throw this.handleError(error);
+        // TODO: Send email with reset link
+        console.log(`Reset link: ${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`);
     }
-}
 
-/**
- * Reset a user's password using a valid reset token.
- */
-async resetPassword(token: string, newPassword: string): Promise<void> {
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    async resetPassword(token: string, newPassword: string): Promise<void> {
+        this.validatePassword(newPassword);
+        const payload = this.verifyResetToken(token);
+        const hashedToken = createHash('sha256').update(token).digest('hex');
 
-        if (!decoded || !decoded.userId) {
-            throw this.createError(400, 'Token invalide ou expiré.');
-        }
-
-        const user = await prisma.user.findFirst({
+        const user = await this.prisma.user.findFirst({
             where: {
-                id: decoded.userId,
-                resetPasswordToken: token,
-                resetPasswordExpires: { gt: new Date() },
-            },
-        }) as UserWithReset | null;
+                id: payload.userId,
+                resetPasswordToken: hashedToken,
+                resetPasswordExpires: { gt: new Date() }
+            }
+        });
 
         if (!user) {
-            throw this.createError(400, 'Token invalide ou expiré.');
+            throw this.createError(400, 'Invalid or expired token');
         }
 
-        // Hachez le nouveau mot de passe
         const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
-
-        // Mettre à jour le mot de passe et nettoyer les champs liés au reset
-        await prisma.user.update({
+        await this.prisma.user.update({
             where: { id: user.id },
             data: {
                 password: hashedPassword,
                 resetPasswordToken: null,
-                resetPasswordExpires: null,
-            },
+                resetPasswordExpires: null
+            }
         });
+    }
 
-        console.log('Mot de passe réinitialisé avec succès.');
-    } catch (error) {
-        if (error instanceof jwt.JsonWebTokenError) {
-            throw this.createError(400, 'Token invalide ou expiré.');
+    private validatePassword(password: string): void {
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            throw this.createError(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
         }
-        throw this.handleError(error);
-    }
-}
-
-    /**
-     * Validate a plain text password against a hashed password.
-     */
-    private async validatePassword(password: string, hashedPassword: string): Promise<boolean> {
-        return bcrypt.compare(password, hashedPassword);
+        // Add more password validation rules as needed
     }
 
-    /**
-     * Generate a JWT token for a user.
-     */
+    private hashEmail(email: string): string {
+        return createHash('sha256').update(email.toLowerCase()).digest('hex');
+    }
+
+    private isLockedOut(email: string): boolean {
+        const attempts = this.loginAttempts.get(email);
+        if (!attempts) return false;
+
+        const timeSinceLastAttempt = Date.now() - attempts.lastAttempt;
+        if (timeSinceLastAttempt > LOGIN_LOCKOUT_TIME) {
+            this.loginAttempts.delete(email);
+            return false;
+        }
+
+        return attempts.count >= MAX_LOGIN_ATTEMPTS;
+    }
+
+    private recordLoginAttempt(email: string): void {
+        const attempts = this.loginAttempts.get(email) || { count: 0, lastAttempt: 0 };
+        attempts.count += 1;
+        attempts.lastAttempt = Date.now();
+        this.loginAttempts.set(email, attempts);
+    }
+
+    private async upsertGoogleUser(payload: jwt.JwtPayload): Promise<User> {
+        const emailHash = this.hashEmail(payload.email!);
+        const userData = {
+            email: payload.email!,
+            emailHash,
+            firstName: payload.given_name || '',
+            lastName: payload.family_name || '',
+            provider: 'google',
+            providerId: payload.sub,
+            photoUrl: payload.picture,
+            emailVerified: true,
+            lastLoginAt: new Date()
+        };
+
+        return this.prisma.user.upsert({
+            where: { email: payload.email! },
+            update: userData,
+            create: userData
+        });
+    }
+
     private generateToken(user: User): string {
         return jwt.sign(
             {
                 userId: user.id,
                 email: user.email,
-                roleId: user.roleId,
+                roleId: user.roleId
             },
             process.env.JWT_SECRET!,
-            { expiresIn: '24h' },
+            { 
+                expiresIn: AUTH_TOKEN_EXPIRY,
+                algorithm: 'HS256'
+            }
         );
     }
 
-    /**
-     * Remove sensitive information from a user object.
-     */
-    private sanitizeUser(user: User): Omit<User, 'password'> {
-        const { password, ...sanitizedUser } = user;
+    private generateResetToken(userId: string): string {
+        return jwt.sign(
+            { userId },
+            process.env.JWT_SECRET!,
+            { 
+                expiresIn: RESET_TOKEN_EXPIRY,
+                algorithm: 'HS256'
+            }
+        );
+    }
+
+    private verifyResetToken(token: string): ResetTokenPayload {
+        try {
+            return jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] }) as ResetTokenPayload;
+        } catch {
+            throw this.createError(400, 'Invalid or expired token');
+        }
+    }
+
+    private sanitizeUser(user: User): Omit<User, 'password' | 'resetPasswordToken' | 'resetPasswordExpires'> {
+        const { password, resetPasswordToken, resetPasswordExpires, ...sanitizedUser } = user;
         return sanitizedUser;
     }
 
-    /**
-     * Create an error object with status.
-     */
     private createError(status: number, message: string): AuthError {
         const error = new Error(message) as AuthError;
         error.status = status;
         return error;
-    }
-
-    /**
-     * Handle and log errors.
-     */
-    private handleError(error: any): AuthError {
-        console.error('Auth Service Error:', error);
-
-        if (error.status) {
-            return error;
-        }
-
-        const authError = new Error(error.message || 'Une erreur est survenue') as AuthError;
-        authError.status = error.status || 500;
-        return authError;
     }
 }

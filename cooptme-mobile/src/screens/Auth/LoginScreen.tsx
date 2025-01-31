@@ -204,15 +204,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     marginBottom: 15,
+    overflow: 'hidden'
   },
   passwordInput: {
     flex: 1,
     padding: 15,
     fontSize: 16,
     color: '#333333',
+    paddingRight: 0
   },
   eyeButton: {
-    padding: 15,
+    padding: 5,
+    paddingLeft: 5,
   },
   loginButton: {
     width: '100%',

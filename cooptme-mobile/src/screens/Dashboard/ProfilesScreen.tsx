@@ -98,15 +98,16 @@ export default function ProfilesScreen() {
   useEffect(() => {
     loadProfiles();
   }, []);
-
+  // Async function to load profiles from the API
   const loadProfiles = async () => {
     try {
       setLoading(true);
       const response = await axios.get('/profiles');
+      // Check if the request was successful
       if (response.data.success) {
         const profilesWithMeetAt = response.data.data.map((profile: Profile) => ({
           ...profile,
-          meetAt: getRandomMeetingPlace(),
+          meetAt: getRandomMeetingPlace(),  // Add a random meeting location
         }));
         setProfiles(profilesWithMeetAt);
       } else {
@@ -118,10 +119,11 @@ export default function ProfilesScreen() {
       setLoading(false);
     }
   };
-
+  // Function to handle category selection
   const handleCategoryPress = async (categoryId: string) => {
     try {
       setLoading(true);
+      // Filter profiles to keep only those matching the selected category
       const filtered = profiles.filter(profile => profile.category === categoryId);
       setFilteredProfiles(filtered);
       setSelectedCategory(categoryId);
@@ -132,7 +134,7 @@ export default function ProfilesScreen() {
       setLoading(false);
     }
   };
-
+  // Function to render category item
   const renderCategoryItem = ({ item }: { item: CategoryCard }) => {
     const profileCount = profiles.filter(p => p.category === item.id).length;
     return (

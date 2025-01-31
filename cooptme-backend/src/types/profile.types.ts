@@ -1,3 +1,4 @@
+// Define the possible categories for profiles
 export type ProfileCategory =
     | 'New'
     | 'Tech'
@@ -23,4 +24,4 @@ export interface Profile {
     company: string;
     url?: string;
     category: ProfileCategory;
-} 
+}

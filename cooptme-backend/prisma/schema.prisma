@@ -1,3 +1,4 @@
+// Schema prisma to generate users, contacts, profiles and jobs
 generator client {
   provider = "prisma-client-js"
 }
@@ -29,27 +30,35 @@ model User {
   updatedAt       DateTime  @updatedAt
 }
 
-model New Profile {
-  id        Int      @id @default(autoincrement())
-  firstName String
-  lastName  String
-  url       String
-  company   String
-  job       String
-  event     String
-  eventDate DateTime
-  createdAt DateTime @default(now())
+// Define the ProfileCategory enum
+enum ProfileCategory {
+  NEW
+  TECH
+  CREATIVE
+  MANAGEMENT
+  EDUCATION
+  HEALTHCARE
+  LEGAL
+  CONSULTING
+  ENTREPRENEURSHIP
+  INVESTING
+  SALES
+  MARKETING
+  PRODUCT
+  OPERATIONS
+  OTHER
 }
 
 model Profile {
-  id        String   @id @default(uuid())
+  id        String         @id @default(uuid())
   firstName String
   lastName  String
-  url       String   @unique
+  url       String        @unique
   company   String
   job       String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  category  ProfileCategory @default(OTHER)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model Contact {

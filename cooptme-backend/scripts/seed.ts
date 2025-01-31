@@ -1,3 +1,17 @@
+/**
+ * Seed script to initialize the database with default roles and users.
+ *
+ * This script creates predefined roles ("User" and "Admin") and inserts example users
+ * into the database. It uses Prisma and bcrypt for hashing passwords.
+ *
+ * Usage:
+ * - Run this script to populate the database with initial data.
+ * - Ensure the database is properly configured before running.
+ *
+ * Key Features:
+ * - Uses `createMany` with `skipDuplicates` to avoid inserting duplicate entries.
+ * - Hashes user passwords securely using bcrypt.
+ */
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -13,12 +27,12 @@ async function main() {
                 { name: 'User' },
                 { name: 'Admin' },
             ],
-            skipDuplicates: true, // Évite les doublons
+            skipDuplicates: true,
         });
 
         console.log('✅ Rôles créés avec succès.');
 
-        // Seed des utilisateurs
+        // Seed of users
         const users = [
             {
                 email: 'cathy.augustin@gmail.com',
@@ -44,7 +58,7 @@ async function main() {
 
         await prisma.user.createMany({
             data: users,
-            skipDuplicates: true, // Évite les doublons
+            skipDuplicates: true,
         });
 
         console.log('✅ Utilisateurs créés avec succès.');

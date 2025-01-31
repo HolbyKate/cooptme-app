@@ -1,3 +1,4 @@
+// Import the necessary modules
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
@@ -155,5 +156,5 @@ app.use('/api', router);
 
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 API running at http://192.168.31.156:${PORT}/api`); // Home: 192.168.31.156 //village: 192.168.23.27 //Esquirol: 10.3.3.75
+    console.log(`🚀 API running at http://192.168.127.198:${PORT}/api`); // Home: 192.168.31.156 //village: 192.168.23.27 //Esquirol: 10.3.3.75. Redmi: 192.168.127.198
 });

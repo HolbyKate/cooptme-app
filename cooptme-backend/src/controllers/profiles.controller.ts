@@ -1,9 +1,12 @@
 import { PrismaClient } from '@prisma/client';
-import { Profile, ProfileCategory } from '../types/profile.types';
+import { ProfileCategory } from '../types/profile.types';
 
 const prisma = new PrismaClient();
 
 export class ProfilesController {
+    /**
+     * Retrieve all profiles sorted by last name in ascending order.
+     */
     async getAllProfiles() {
         try {
             const profiles = await prisma.profile.findMany({
@@ -18,11 +21,17 @@ export class ProfilesController {
         }
     }
 
-    async getProfilesByCategory(category: ProfileCategory) {
+    /**
+     * Retrieve profiles filtered by category.
+     *
+     * @param {ProfileCategory} profileCategory - The category to filter profiles by.
+     * @returns {Promise<Profile[]>}
+     */
+    async getProfilesByCategory(profileCategory: ProfileCategory) {
         try {
             const profiles = await prisma.profile.findMany({
                 where: {
-                    category: category,
+                    category: profileCategory,
                 },
                 orderBy: {
                     lastName: 'asc',
